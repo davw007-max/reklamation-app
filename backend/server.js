@@ -4,11 +4,6 @@ const http = require("http");
 const { Server } = require("socket.io");
 const mongoose = require("mongoose");
 
-// ================= DATABASE =================
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log("✅ MongoDB verbunden"))
-  .catch(err => console.error("❌ Fehler:", err));
-
 // ================= APP =================
 const app = express();
 app.use(cors());
@@ -19,6 +14,14 @@ const server = http.createServer(app);
 const io = new Server(server, {
   cors: { origin: "*" },
 });
+
+// ================= PORT =================
+const PORT = process.env.PORT || 3001;
+
+// ================= DATABASE =================
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log("✅ MongoDB verbunden"))
+  .catch(err => console.error("❌ MongoDB Fehler:", err));
 
 // ================= SCHEMA =================
 const AuftragSchema = new mongoose.Schema({
@@ -39,7 +42,7 @@ const Auftrag = mongoose.model("Auftrag", AuftragSchema);
 
 // ================= SOCKET =================
 io.on("connection", async (socket) => {
-  console.log("Client verbunden");
+  console.log("🔌 Client verbunden");
 
   const daten = await Auftrag.find();
   socket.emit("auftraege", daten);
@@ -117,6 +120,6 @@ app.delete("/auftraege/:id", async (req, res) => {
 });
 
 // ================= START =================
-server.listen(3001, "0.0.0.0", () => {
-  console.log("🚀 Server läuft auf http://192.168.178.23:3001");
+server.listen(PORT, "0.0.0.0", () => {
+  console.log(`🚀 Server läuft auf Port ${PORT}`);
 });
