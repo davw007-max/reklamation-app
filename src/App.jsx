@@ -112,16 +112,17 @@ function App() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          lat: pos.coords.latitude,
-          lng: pos.coords.longitude,
-          status: "erledigt",
-        }),
+  lat: pos.coords.latitude,
+  lng: pos.coords.longitude,
+  status: "erledigt",
+  erledigtAm: new Date()
+}),
       });
     });
   };
 
   // 📄 PDF Export
-cconst exportPDF = async (a) => {
+const exportPDF = async (a) => {
   const doc = new jsPDF();
 
   const heute = new Date().toLocaleDateString("de-DE");
@@ -129,7 +130,6 @@ cconst exportPDF = async (a) => {
   // 🖼 Logo laden
   const img = await loadImage("/logo.png");
 
-  // Canvas für Base64
   const canvas = document.createElement("canvas");
   canvas.width = img.width;
   canvas.height = img.height;
@@ -138,24 +138,22 @@ cconst exportPDF = async (a) => {
 
   const imgData = canvas.toDataURL("image/png");
 
-  // 🖼 Logo einfügen (links oben)
+  // Logo
   doc.addImage(imgData, "PNG", 10, 10, 60, 20);
 
-  // 🏢 Kopf rechts
+  // Kopf rechts
   doc.setFontSize(10);
   doc.text("Kühl Entsorgung & Recycling", 140, 10);
   doc.text("Südwest GmbH", 140, 15);
   doc.text("Dispositionssystem", 140, 20);
   doc.text(`Datum: ${heute}`, 140, 25);
 
-  // 🧾 Titel
+  // Titel
   doc.setFontSize(18);
   doc.text("Auftrag", 10, 40);
 
-  // Linie
   doc.line(10, 45, 200, 45);
 
-  // 📦 Inhalte
   doc.setFontSize(12);
 
   let y = 60;
@@ -169,6 +167,35 @@ cconst exportPDF = async (a) => {
 
     y += 10;
   };
+
+  line("Auftragsnummer:", a.nummer);
+  line("Fahrer:", a.fahrer);
+  line("Straße:", a.strasse);
+  line("Ort:", a.plzOrt);
+  line("Material:", a.material);
+  line("Status:", a.status);
+
+  // 📍 GPS
+  if (a.lat && a.lng) {
+    line("GPS:", `${a.lat}, ${a.lng}`);
+  }
+
+  // 📅 Datum + Uhrzeit erledigt
+  if (a.erledigtAm) {
+    const d = new Date(a.erledigtAm);
+
+    const datum = d.toLocaleDateString("de-DE");
+    const uhrzeit = d.toLocaleTimeString("de-DE", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    line("Erledigt am:", datum);
+    line("Uhrzeit:", uhrzeit);
+  }
+
+  doc.save(`auftrag_${a.nummer}.pdf`);
+};
 
   line("Auftragsnummer:", a.nummer);
   line("Fahrer:", a.fahrer);
