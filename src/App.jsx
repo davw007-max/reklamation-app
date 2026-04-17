@@ -1,14 +1,12 @@
 import { useState, useEffect } from "react";
 import { io } from "socket.io-client";
 
-// 🔥 WICHTIG: deine Live-API
 const API = "https://reklamation-backend.onrender.com";
 
 function App() {
   const [auftraege, setAuftraege] = useState([]);
   const [user, setUser] = useState(localStorage.getItem("fahrer") || "");
   const [loginName, setLoginName] = useState("");
-  const [socket, setSocket] = useState(null);
 
   const [form, setForm] = useState({
     nummer: "",
@@ -20,23 +18,22 @@ function App() {
 
   const isDisponent = user === "Dispo";
 
-  // 🔌 Socket Verbindung sauber aufbauen
+  // 🔌 Socket
   useEffect(() => {
-    const newSocket = io(API);
-    setSocket(newSocket);
+    const socket = io(API);
 
-    newSocket.on("auftraege", (data) => {
+    socket.on("auftraege", (data) => {
       setAuftraege(data);
     });
 
-    return () => newSocket.disconnect();
+    return () => socket.disconnect();
   }, []);
 
   // 📦 Initial laden
   useEffect(() => {
     fetch(API + "/auftraege")
       .then((res) => res.json())
-      .then((data) => setAuftraege(data))
+      .then(setAuftraege)
       .catch(() => alert("Server nicht erreichbar"));
   }, []);
 
@@ -46,9 +43,7 @@ function App() {
 
     const res = await fetch(API + "/login", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name: loginName }),
     });
 
@@ -76,9 +71,7 @@ function App() {
 
     await fetch(API + "/auftraege", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form),
     });
 
@@ -93,13 +86,11 @@ function App() {
 
   // 🗑 Löschen
   const deleteAuftrag = async (id) => {
-    await fetch(`${API}/auftraege/${id}`, {
-      method: "DELETE",
-    });
+    await fetch(`${API}/auftraege/${id}`, { method: "DELETE" });
   };
 
   // ✔ Status + GPS
-  const toggleStatus = async (id) => {
+  const toggleStatus = (id) => {
     if (!navigator.geolocation) {
       alert("GPS nicht verfügbar");
       return;
@@ -108,9 +99,7 @@ function App() {
     navigator.geolocation.getCurrentPosition(async (pos) => {
       await fetch(`${API}/auftraege/${id}`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           lat: pos.coords.latitude,
           lng: pos.coords.longitude,
@@ -122,6 +111,21 @@ function App() {
   const meineAuftraege = auftraege.filter(
     (a) => a.fahrer === user && a.status === "offen"
   );
+
+  const cardStyle = {
+    background: "#f4f4f4",
+    padding: 15,
+    marginBottom: 15,
+    borderRadius: 10,
+  };
+
+  const buttonStyle = {
+    width: "100%",
+    padding: 10,
+    marginTop: 5,
+    borderRadius: 8,
+    border: "none",
+  };
 
   return (
     <div style={{ padding: 15, fontFamily: "Arial" }}>
@@ -146,7 +150,7 @@ function App() {
 
           <br /><br />
 
-          <button onClick={login} style={{ width: "80%", padding: 12 }}>
+          <button onClick={login} style={{ ...buttonStyle, background: "#007bff", color: "white" }}>
             Start
           </button>
         </div>
@@ -172,17 +176,37 @@ function App() {
             <option value="Ali">Ali</option>
           </select>
 
-          <button onClick={addAuftrag}>➕ Auftrag erstellen</button>
+          <button style={{ ...buttonStyle, background: "green", color: "white" }} onClick={addAuftrag}>
+            ➕ Auftrag erstellen
+          </button>
 
           <hr />
 
           {auftraege.map((a) => (
-            <div key={a._id}>
+            <div key={a._id} style={cardStyle}>
               <b>{a.nummer}</b><br />
               {a.fahrer}<br />
-              {a.status}<br />
+              <span style={{ color: a.status === "erledigt" ? "green" : "red" }}>
+                {a.status}
+              </span>
 
-              <button onClick={() => deleteAuftrag(a._id)}>🗑 Löschen</button>
+              {a.gps && a.gps.lat && (
+                <button
+                  style={{ ...buttonStyle, background: "#007bff", color: "white" }}
+                  onClick={() =>
+                    window.open(`https://www.google.com/maps?q=${a.gps.lat},${a.gps.lng}`)
+                  }
+                >
+                  📍 Standort anzeigen
+                </button>
+              )}
+
+              <button
+                style={{ ...buttonStyle, background: "red", color: "white" }}
+                onClick={() => deleteAuftrag(a._id)}
+              >
+                🗑 Löschen
+              </button>
             </div>
           ))}
         </>
@@ -195,12 +219,13 @@ function App() {
           <button onClick={logout}>Logout</button>
 
           {meineAuftraege.map((a) => (
-            <div key={a._id}>
+            <div key={a._id} style={cardStyle}>
               <b>{a.nummer}</b><br />
               {a.strasse}<br />
               {a.plzOrt}<br />
 
               <button
+                style={{ ...buttonStyle, background: "#007bff", color: "white" }}
                 onClick={() => {
                   const query = encodeURIComponent(a.strasse + " " + a.plzOrt);
                   window.open(
@@ -208,10 +233,13 @@ function App() {
                   );
                 }}
               >
-                Navigation
+                🗺 Navigation
               </button>
 
-              <button onClick={() => toggleStatus(a._id)}>
+              <button
+                style={{ ...buttonStyle, background: "green", color: "white" }}
+                onClick={() => toggleStatus(a._id)}
+              >
                 ✔ Erledigt
               </button>
             </div>
