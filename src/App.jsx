@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { io } from "socket.io-client";
+import jsPDF from "jspdf";
+import logo from "./logo.png"; // Logo in src ablegen
 
 const API = "https://reklamation-backend.onrender.com";
 
@@ -83,6 +85,87 @@ function App() {
       fahrer: "",
     });
   };
+
+  // 📅 Kalenderwoche
+  function getKalenderwoche(date = new Date()) {
+    const tempDate = new Date(date);
+    tempDate.setHours(0, 0, 0, 0);
+
+    tempDate.setDate(tempDate.getDate() + 3 - ((tempDate.getDay() + 6) % 7));
+
+    const firstThursday = new Date(tempDate.getFullYear(), 0, 4);
+    const weekNumber =
+      1 +
+      Math.round(
+        ((tempDate - firstThursday) / 86400000 - 3 + ((firstThursday.getDay() + 6) % 7)) / 7
+      );
+
+    return weekNumber;
+  }
+
+  // 📄 PDF Export (pro Auftrag!)
+const exportPDF = (auftrag) => {
+  const doc = new jsPDF();
+
+  const now = new Date();
+  const jahr = now.getFullYear();
+  const kw = getKalenderwoche(now);
+
+  const auftragsnummer = auftrag.nummer || "0000";
+  const dateiname = `${jahr}_KW${kw}_${auftragsnummer}.pdf`;
+
+  // 🖼 Logo einfügen
+  doc.addImage(logo, "PNG", 10, 8, 40, 15);
+
+  // 🏢 Firmenkopf rechts
+  doc.setFontSize(10);
+  doc.text("Kurz Entsorgung", 140, 10);
+  doc.text("Dispositionssystem", 140, 15);
+  doc.text(`Datum: ${now.toLocaleDateString()}`, 140, 20);
+
+  // 📄 Titel
+  doc.setFontSize(16);
+  doc.text("Auftrag", 10, 35);
+
+  // Linie
+  doc.line(10, 38, 200, 38);
+
+  // 📦 Auftragsdaten
+  doc.setFontSize(12);
+
+  let y = 50;
+
+  const line = (label, value) => {
+    doc.setFont(undefined, "bold");
+    doc.text(label, 10, y);
+
+    doc.setFont(undefined, "normal");
+    doc.text(String(value || "-"), 60, y);
+
+    y += 8;
+  };
+
+  line("Auftragsnummer:", auftrag.nummer);
+  line("Fahrer:", auftrag.fahrer);
+  line("Straße:", auftrag.strasse);
+  line("Ort:", auftrag.plzOrt);
+  line("Material:", auftrag.material);
+  line("Status:", auftrag.status);
+
+  if (auftrag.gps?.lat) {
+    line("GPS:", `${auftrag.gps.lat}, ${auftrag.gps.lng}`);
+  }
+
+  // 🧾 Footer
+  doc.setFontSize(10);
+  doc.text(
+    "Dieses Dokument wurde automatisch erstellt.",
+    10,
+    280
+  );
+
+  doc.save(dateiname);
+};
 
   // 🗑 Löschen
   const deleteAuftrag = async (id) => {
@@ -186,11 +269,12 @@ function App() {
             <div key={a._id} style={cardStyle}>
               <b>{a.nummer}</b><br />
               {a.fahrer}<br />
+
               <span style={{ color: a.status === "erledigt" ? "green" : "red" }}>
                 {a.status}
               </span>
 
-              {a.gps && a.gps.lat && (
+              {a.gps?.lat && (
                 <button
                   style={{ ...buttonStyle, background: "#007bff", color: "white" }}
                   onClick={() =>
@@ -200,6 +284,13 @@ function App() {
                   📍 Standort anzeigen
                 </button>
               )}
+
+              <button
+                style={{ ...buttonStyle, background: "#6c757d", color: "white" }}
+                onClick={() => exportPDF(a)}
+              >
+                📄 PDF
+              </button>
 
               <button
                 style={{ ...buttonStyle, background: "red", color: "white" }}
