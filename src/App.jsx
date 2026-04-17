@@ -121,26 +121,58 @@ function App() {
   };
 
   // 📄 PDF Export
-  const exportPDF = (a) => {
-    const doc = new jsPDF();
+const exportPDF = (a) => {
+  const doc = new jsPDF();
 
-    const beschreibung = a.beschreibung || "-";
-    const beschreibungLines = doc.splitTextToSize(beschreibung, 180);
+  // 📅 Datum
+  const heute = new Date().toLocaleDateString("de-DE");
 
-    const text = [
-      `Auftrag: ${a.nummer}`,
-      `Adresse: ${a.strasse}, ${a.plzOrt}`,
-      `Fahrer: ${a.fahrer}`,
-      `Material: ${a.material}`,
-      `Status: ${a.status}`,
-      "",
-      "Beschreibung:",
-      ...beschreibungLines,
-    ];
+  // 🖼 Logo (optional – später möglich)
+  // doc.addImage(logo, "PNG", 10, 10, 50, 20);
 
-    doc.text(text, 10, 10);
-    doc.save(`auftrag_${a.nummer}.pdf`);
+  // 🏢 Kopf rechts
+  doc.setFontSize(10);
+  doc.text("Kühl Entsorgung & Recycling", 140, 10);
+  doc.text("Südwest GmbH", 140, 15);
+  doc.text("Dispositionssystem", 140, 20);
+  doc.text(`Datum: ${heute}`, 140, 25);
+
+  // 🧾 Titel
+  doc.setFontSize(18);
+  doc.text("Auftrag", 10, 40);
+
+  // Linie
+  doc.line(10, 45, 200, 45);
+
+  // 📦 Inhalte
+  doc.setFontSize(12);
+
+  let y = 60;
+
+  const line = (label, value) => {
+    doc.setFont(undefined, "bold");
+    doc.text(label, 10, y);
+
+    doc.setFont(undefined, "normal");
+    doc.text(value || "-", 80, y);
+
+    y += 10;
   };
+
+  line("Auftragsnummer:", a.nummer);
+  line("Fahrer:", a.fahrer);
+  line("Straße:", a.strasse);
+  line("Ort:", a.plzOrt);
+  line("Material:", a.material);
+  line("Status:", a.status);
+
+  if (a.lat && a.lng) {
+    line("GPS:", `${a.lat}, ${a.lng}`);
+  }
+
+  // 💾 Speichern
+  doc.save(`auftrag_${a.nummer}.pdf`);
+};
 
   const meineAuftraege = auftraege.filter(
     (a) => a.fahrer === user && a.status === "offen"
