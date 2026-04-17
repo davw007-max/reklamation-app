@@ -121,14 +121,25 @@ function App() {
   };
 
   // 📄 PDF Export
-const exportPDF = (a) => {
+cconst exportPDF = async (a) => {
   const doc = new jsPDF();
 
-  // 📅 Datum
   const heute = new Date().toLocaleDateString("de-DE");
 
-  // 🖼 Logo (optional – später möglich)
-  // doc.addImage(logo, "PNG", 10, 10, 50, 20);
+  // 🖼 Logo laden
+  const img = await loadImage("/logo.png");
+
+  // Canvas für Base64
+  const canvas = document.createElement("canvas");
+  canvas.width = img.width;
+  canvas.height = img.height;
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(img, 0, 0);
+
+  const imgData = canvas.toDataURL("image/png");
+
+  // 🖼 Logo einfügen (links oben)
+  doc.addImage(imgData, "PNG", 10, 10, 60, 20);
 
   // 🏢 Kopf rechts
   doc.setFontSize(10);
@@ -158,6 +169,20 @@ const exportPDF = (a) => {
 
     y += 10;
   };
+
+  line("Auftragsnummer:", a.nummer);
+  line("Fahrer:", a.fahrer);
+  line("Straße:", a.strasse);
+  line("Ort:", a.plzOrt);
+  line("Material:", a.material);
+  line("Status:", a.status);
+
+  if (a.lat && a.lng) {
+    line("GPS:", `${a.lat}, ${a.lng}`);
+  }
+
+  doc.save(`auftrag_${a.nummer}.pdf`);
+};
 
   line("Auftragsnummer:", a.nummer);
   line("Fahrer:", a.fahrer);
