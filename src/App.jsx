@@ -240,6 +240,16 @@ function App() {
               {a.fahrer}<br />
               {a.material}<br />
               {a.status}<br />
+              {a.lat && a.lng && (
+            
+            <button
+              onClick={() =>
+              window.open(`https://www.google.com/maps?q=${a.lat},${a.lng}`)
+            }
+            >
+             📍 Standort anzeigen
+            </button>
+            )}
 
               <button onClick={() => exportPDF(a)}>📄 PDF</button>
               <button onClick={() => deleteAuftrag(a._id)}>🗑 Löschen</button>
@@ -254,17 +264,32 @@ function App() {
           <button onClick={logout}>Logout</button>
 
           {meineAuftraege.map((a) => (
-            <div key={a._id}>
-              <b>{a.nummer}</b><br />
-              {a.strasse}<br />
-              {a.plzOrt}<br />
-              {a.material}<br />
+  <div key={a._id}>
+    <b>{a.nummer}</b><br />
+    {a.strasse}<br />
+    {a.plzOrt}<br />
+    {a.material}<br /><br />
 
-              <button onClick={() => toggleStatus(a._id)}>
-                ✔ Erledigt
-              </button>
-            </div>
-          ))}
+    {/* 🧭 Navigation */}
+    <button
+      onClick={() => {
+        const query = encodeURIComponent(a.strasse + " " + a.plzOrt);
+        window.open(
+          "https://www.google.com/maps/search/?api=1&query=" + query
+        );
+      }}
+    >
+      🧭 Navigation
+    </button>
+
+    <br /><br />
+
+    {/* ✔ Erledigt + GPS */}
+    <button onClick={() => toggleStatus(a._id)}>
+      ✔ Erledigt
+    </button>
+  </div>
+))}
         </>
       )}
     </div>
