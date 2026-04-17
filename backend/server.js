@@ -1,126 +1,88 @@
 const express = require("express");
+const mongoose = require("mongoose");
 const cors = require("cors");
 const http = require("http");
 const { Server } = require("socket.io");
-const mongoose = require("mongoose");
-const webpush = require("web-push");
 
-// ================= APP =================
 const app = express();
-app.use(cors());
-app.use(express.json());
-
-// ================= SERVER =================
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: { origin: "*" },
 });
 
-// ================= PORT =================
-const PORT = process.env.PORT || 3001;
+app.use(cors());
+app.use(express.json());
 
-// ================= DATABASE =================
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log("✅ MongoDB verbunden"))
-  .catch(err => console.error("❌ MongoDB Fehler:", err));
+// 🔗 MongoDB
+mongoose.connect("mongodb://127.0.0.1:27017/reklamation");
 
-// ================= SCHEMA =================
+// 📦 Schema
 const AuftragSchema = new mongoose.Schema({
   nummer: String,
   strasse: String,
   plzOrt: String,
   material: String,
   fahrer: String,
-  status: String,
-  zeit: String,
-  gps: {
-    lat: Number,
-    lng: Number,
-  },
+  status: { type: String, default: "offen" },
+
+  // 🔥 WICHTIG
+  lat: Number,
+  lng: Number,
+  erledigtAm: Date,
 });
 
 const Auftrag = mongoose.model("Auftrag", AuftragSchema);
 
-// ================= SOCKET =================
-io.on("connection", async (socket) => {
-  console.log("🔌 Client verbunden");
-
-  const daten = await Auftrag.find();
-  socket.emit("auftraege", daten);
-});
-
-const updateClients = async () => {
-  const daten = await Auftrag.find();
-  io.emit("auftraege", daten);
-};
-
-// ================= LOGIN =================
-const fahrerListe = ["Max", "Tom", "Ali", "Dispo"];
-
+// 🔐 Login (einfach)
 app.post("/login", (req, res) => {
-  let { name } = req.body;
-  name = name.trim();
-
-  const gefunden = fahrerListe.find(
-    (f) => f.toLowerCase() === name.toLowerCase()
-  );
-
-  if (gefunden) return res.json({ success: true, name: gefunden });
-
-  res.status(401).json({ success: false });
+  res.json({ name: req.body.name });
 });
 
-// ================= ROUTEN =================
-
-// Alle Aufträge
+// 📥 Alle Aufträge
 app.get("/auftraege", async (req, res) => {
-  const daten = await Auftrag.find();
-  res.json(daten);
+  const data = await Auftrag.find().sort({ createdAt: -1 });
+  res.json(data);
 });
 
-// Auftrag erstellen
+// ➕ Auftrag erstellen
 app.post("/auftraege", async (req, res) => {
-  const neuerAuftrag = new Auftrag({
-    ...req.body,
-    status: "offen",
-    zeit: new Date().toLocaleString(),
-  });
+  const neu = new Auftrag(req.body);
+  await neu.save();
 
-  await neuerAuftrag.save();
-  updateClients();
+  const alle = await Auftrag.find();
+  io.emit("auftraege", alle);
 
-  res.json(neuerAuftrag);
+  res.sendStatus(200);
 });
 
-// Status + GPS
-app.put("/auftraege/:id", async (req, res) => {
-  const { lat, lng } = req.body;
-
-  const auftrag = await Auftrag.findById(req.params.id);
-  if (!auftrag) return res.sendStatus(404);
-
-  auftrag.status =
-    auftrag.status === "offen" ? "erledigt" : "offen";
-
-  if (lat !== undefined && lng !== undefined) {
-    auftrag.gps = { lat, lng };
-  }
-
-  await auftrag.save();
-  updateClients();
-
-  res.json({ success: true });
-});
-
-// Löschen
+// 🗑 Löschen
 app.delete("/auftraege/:id", async (req, res) => {
   await Auftrag.findByIdAndDelete(req.params.id);
-  updateClients();
 
-  res.json({ success: true });
+  const alle = await Auftrag.find();
+  io.emit("auftraege", alle);
+
+  res.sendStatus(200);
 });
 
-// ================= START =================
-server.listen(PORT, "0.0.0.0", () => {
-  console.log(`🚀 Server läuft auf Port ${PORT}`);
+// 🔥 ✔ STATUS + GPS + ZEIT (DAS IST DER WICHTIGE TEIL)
+app.put("/auftraege/:id", async (req, res) => {
+  const { lat, lng, status, erledigtAm } = req.body;
+
+  await Auftrag.findByIdAndUpdate(req.params.id, {
+    lat,
+    lng,
+    status,
+    erledigtAm,
+  });
+
+  const alle = await Auftrag.find();
+  io.emit("auftraege", alle);
+
+  res.sendStatus(200);
+});
+
+// 🚀 Server starten
+server.listen(3001, () => {
+  console.log("Server läuft auf Port 3001");
 });
