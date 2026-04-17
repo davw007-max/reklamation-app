@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
 import { io } from "socket.io-client";
 
-const API = "http://192.168.178.23:3001";
-const socket = io(API);
+// 🔥 WICHTIG: deine Live-API
+const API = "https://reklamation-backend.onrender.com";
 
 function App() {
   const [auftraege, setAuftraege] = useState([]);
   const [user, setUser] = useState(localStorage.getItem("fahrer") || "");
   const [loginName, setLoginName] = useState("");
+  const [socket, setSocket] = useState(null);
 
   const [form, setForm] = useState({
     nummer: "",
@@ -19,20 +20,24 @@ function App() {
 
   const isDisponent = user === "Dispo";
 
-  // 🔥 Initial laden
+  // 🔌 Socket Verbindung sauber aufbauen
   useEffect(() => {
-    fetch(API + "/auftraege")
-      .then((res) => res.json())
-      .then((data) => setAuftraege(data));
-  }, []);
+    const newSocket = io(API);
+    setSocket(newSocket);
 
-  // 🔥 Live Updates
-  useEffect(() => {
-    socket.on("auftraege", (data) => {
+    newSocket.on("auftraege", (data) => {
       setAuftraege(data);
     });
 
-    return () => socket.off("auftraege");
+    return () => newSocket.disconnect();
+  }, []);
+
+  // 📦 Initial laden
+  useEffect(() => {
+    fetch(API + "/auftraege")
+      .then((res) => res.json())
+      .then((data) => setAuftraege(data))
+      .catch(() => alert("Server nicht erreichbar"));
   }, []);
 
   // 🔐 Login
@@ -51,6 +56,8 @@ function App() {
       const data = await res.json();
       localStorage.setItem("fahrer", data.name);
       setUser(data.name);
+    } else {
+      alert("Login fehlgeschlagen");
     }
   };
 
@@ -65,6 +72,8 @@ function App() {
   };
 
   const addAuftrag = async () => {
+    if (!form.fahrer) return alert("Fahrer auswählen!");
+
     await fetch(API + "/auftraege", {
       method: "POST",
       headers: {
@@ -91,6 +100,11 @@ function App() {
 
   // ✔ Status + GPS
   const toggleStatus = async (id) => {
+    if (!navigator.geolocation) {
+      alert("GPS nicht verfügbar");
+      return;
+    }
+
     navigator.geolocation.getCurrentPosition(async (pos) => {
       await fetch(`${API}/auftraege/${id}`, {
         method: "PUT",
@@ -108,178 +122,104 @@ function App() {
   const meineAuftraege = auftraege.filter(
     (a) => a.fahrer === user && a.status === "offen"
   );
-const getStatusStyle = (status) => {
-  return {
-    color: status === "erledigt" ? "green" : "red",
-    fontWeight: "bold",
-  };
-};
+
   return (
-  <div style={{ padding: 15, fontFamily: "Arial" }}>
-    <h1 style={{ textAlign: "center" }}>🚛 Fahrer App</h1>
+    <div style={{ padding: 15, fontFamily: "Arial" }}>
+      <h1 style={{ textAlign: "center" }}>🚛 Fahrer App</h1>
 
-    {/* LOGIN */}
-    {!user && (
-      <div style={{ textAlign: "center" }}>
-        <h2>Fahrer wählen</h2>
+      {/* LOGIN */}
+      {!user && (
+        <div style={{ textAlign: "center" }}>
+          <h2>Fahrer wählen</h2>
 
-        <select
-          value={loginName}
-          onChange={(e) => setLoginName(e.target.value)}
-          style={{ fontSize: 18, padding: 10, width: "80%" }}
-        >
-          <option value="">Bitte wählen</option>
-          <option value="Max">Max</option>
-          <option value="Tom">Tom</option>
-          <option value="Ali">Ali</option>
-          <option value="Dispo">Disponent</option>
-        </select>
-
-        <br /><br />
-
-        <button
-          onClick={login}
-          style={{
-            fontSize: 18,
-            padding: 12,
-            width: "80%",
-            background: "#007bff",
-            color: "white",
-            border: "none",
-            borderRadius: 8,
-          }}
-        >
-          Start
-        </button>
-      </div>
-    )}
-
-    {/* DISPO */}
-    {user && isDisponent && (
-      <>
-        <h2>👨‍💼 Disponent</h2>
-        <button onClick={logout}>Logout</button>
-
-        <h3>Neuer Auftrag</h3>
-
-        <input name="nummer" placeholder="Nummer" onChange={handleChange} style={{ width: "100%", padding: 8, marginBottom: 5 }} />
-        <input name="strasse" placeholder="Straße" onChange={handleChange} style={{ width: "100%", padding: 8, marginBottom: 5 }} />
-        <input name="plzOrt" placeholder="PLZ Ort" onChange={handleChange} style={{ width: "100%", padding: 8, marginBottom: 5 }} />
-        <input name="material" placeholder="Material" onChange={handleChange} style={{ width: "100%", padding: 8, marginBottom: 5 }} />
-
-        <select name="fahrer" onChange={handleChange} style={{ width: "100%", padding: 8 }}>
-          <option value="">Fahrer wählen</option>
-          <option value="Max">Max</option>
-          <option value="Tom">Tom</option>
-          <option value="Ali">Ali</option>
-        </select>
-
-        <br /><br />
-
-        <button
-          onClick={addAuftrag}
-          style={{ width: "100%", padding: 12, background: "green", color: "white", borderRadius: 8 }}
-        >
-          ➕ Auftrag erstellen
-        </button>
-
-        <hr />
-
-        {auftraege.map((a) => (
-          <div
-            key={a._id}
-            style={{
-              background: "#f4f4f4",
-              padding: 10,
-              marginBottom: 10,
-              borderRadius: 10,
-            }}
+          <select
+            value={loginName}
+            onChange={(e) => setLoginName(e.target.value)}
+            style={{ fontSize: 18, padding: 10, width: "80%" }}
           >
-            <b>{a.nummer}</b><br />
-            {a.fahrer}<br />
-            <span style={{ color: a.status === "erledigt" ? "green" : "red" }}>
-              {a.status}
-            </span>
+            <option value="">Bitte wählen</option>
+            <option value="Max">Max</option>
+            <option value="Tom">Tom</option>
+            <option value="Ali">Ali</option>
+            <option value="Dispo">Disponent</option>
+          </select>
 
-            <br /><br />
+          <br /><br />
 
-            <button
-              onClick={() => deleteAuftrag(a._id)}
-              style={{ width: "100%", padding: 10, background: "red", color: "white", borderRadius: 8 }}
-            >
-              🗑 Löschen
-            </button>
-          </div>
-        ))}
-      </>
-    )}
+          <button onClick={login} style={{ width: "80%", padding: 12 }}>
+            Start
+          </button>
+        </div>
+      )}
 
-    {/* FAHRER */}
-    {user && !isDisponent && (
-      <>
-        <h2>{user}</h2>
-        <button onClick={logout}>Logout</button>
+      {/* DISPO */}
+      {user && isDisponent && (
+        <>
+          <h2>👨‍💼 Disponent</h2>
+          <button onClick={logout}>Logout</button>
 
-        <h2>Meine Aufträge</h2>
+          <h3>Neuer Auftrag</h3>
 
-        {meineAuftraege.map((a) => (
-          <div
-            key={a._id}
-            style={{
-              background: "#f4f4f4",
-              padding: 15,
-              marginBottom: 15,
-              borderRadius: 12,
-            }}
-          >
-            <b style={{ fontSize: 18 }}>{a.nummer}</b><br />
+          <input name="nummer" placeholder="Nummer" onChange={handleChange} />
+          <input name="strasse" placeholder="Straße" onChange={handleChange} />
+          <input name="plzOrt" placeholder="PLZ Ort" onChange={handleChange} />
+          <input name="material" placeholder="Material" onChange={handleChange} />
 
-            {a.strasse}<br />
-            {a.plzOrt}<br />
+          <select name="fahrer" onChange={handleChange}>
+            <option value="">Fahrer wählen</option>
+            <option value="Max">Max</option>
+            <option value="Tom">Tom</option>
+            <option value="Ali">Ali</option>
+          </select>
 
-            <span style={{ fontWeight: "bold" }}>
-           Material: {a.material || "-"}
-          </span>
+          <button onClick={addAuftrag}>➕ Auftrag erstellen</button>
 
-            <br /><br />
+          <hr />
 
-            <button
-              onClick={() => {
-                const query = encodeURIComponent(a.strasse + " " + a.plzOrt);
-                window.open(
-                  "https://www.google.com/maps/search/?api=1&query=" + query
-                );
-              }}
-              style={{
-                width: "100%",
-                padding: 12,
-                marginBottom: 10,
-                background: "#007bff",
-                color: "white",
-                borderRadius: 8,
-              }}
-            >
-              🗺 Navigation
-            </button>
+          {auftraege.map((a) => (
+            <div key={a._id}>
+              <b>{a.nummer}</b><br />
+              {a.fahrer}<br />
+              {a.status}<br />
 
-            <button
-              onClick={() => toggleStatus(a._id)}
-              style={{
-                width: "100%",
-                padding: 12,
-                background: "green",
-                color: "white",
-                borderRadius: 8,
-              }}
-            >
-              ✔ Erledigt
-            </button>
-          </div>
-        ))}
-      </>
-    )}
-  </div>
-);
+              <button onClick={() => deleteAuftrag(a._id)}>🗑 Löschen</button>
+            </div>
+          ))}
+        </>
+      )}
+
+      {/* FAHRER */}
+      {user && !isDisponent && (
+        <>
+          <h2>{user}</h2>
+          <button onClick={logout}>Logout</button>
+
+          {meineAuftraege.map((a) => (
+            <div key={a._id}>
+              <b>{a.nummer}</b><br />
+              {a.strasse}<br />
+              {a.plzOrt}<br />
+
+              <button
+                onClick={() => {
+                  const query = encodeURIComponent(a.strasse + " " + a.plzOrt);
+                  window.open(
+                    "https://www.google.com/maps/search/?api=1&query=" + query
+                  );
+                }}
+              >
+                Navigation
+              </button>
+
+              <button onClick={() => toggleStatus(a._id)}>
+                ✔ Erledigt
+              </button>
+            </div>
+          ))}
+        </>
+      )}
+    </div>
+  );
 }
 
 export default App;
