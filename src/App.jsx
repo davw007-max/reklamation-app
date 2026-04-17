@@ -119,7 +119,7 @@ const exportPDF = (auftrag) => {
 
   // 🏢 Firmenkopf rechts
   doc.setFontSize(10);
-  doc.text("Kurz Entsorgung", 140, 10);
+  doc.text("Kühl Entsorgung & Recycling Südwest GmbH", 140, 10);
   doc.text("Dispositionssystem", 140, 15);
   doc.text(`Datum: ${now.toLocaleDateString()}`, 140, 20);
 
