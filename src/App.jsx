@@ -22,19 +22,15 @@ function App() {
   // 🔌 Socket
   useEffect(() => {
     const socket = io(API);
-
-    socket.on("auftraege", (data) => {
-      setAuftraege(data);
-    });
-
+    socket.on("auftraege", setAuftraege);
     return () => socket.disconnect();
   }, []);
 
-  // 📦 Initial laden
+  // 📦 Laden
   useEffect(() => {
     fetch(API + "/auftraege")
       .then((res) => res.json())
-      .then((data) => setAuftraege(data))
+      .then(setAuftraege)
       .catch(() => alert("Server nicht erreichbar"));
   }, []);
 
@@ -44,9 +40,7 @@ function App() {
 
     const res = await fetch(API + "/login", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name: loginName }),
     });
 
@@ -76,9 +70,7 @@ function App() {
 
     await fetch(API + "/auftraege", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form),
     });
 
@@ -93,12 +85,10 @@ function App() {
 
   // 🗑 Löschen
   const deleteAuftrag = async (id) => {
-    await fetch(`${API}/auftraege/${id}`, {
-      method: "DELETE",
-    });
+    await fetch(`${API}/auftraege/${id}`, { method: "DELETE" });
   };
 
-  // ✔ Status + GPS
+  // ✔ Status + GPS + Zeit
   const toggleStatus = async (id) => {
     if (!navigator.geolocation) {
       alert("GPS nicht verfügbar");
@@ -108,123 +98,88 @@ function App() {
     navigator.geolocation.getCurrentPosition(async (pos) => {
       await fetch(`${API}/auftraege/${id}`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-  lat: pos.coords.latitude,
-  lng: pos.coords.longitude,
-  status: "erledigt",
-  erledigtAm: new Date()
-}),
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+          status: "erledigt",
+          erledigtAm: new Date(),
+        }),
       });
     });
   };
 
-  // 📄 PDF Export
-const exportPDF = async (a) => {
-  const doc = new jsPDF();
-
-  const heute = new Date().toLocaleDateString("de-DE");
-
-  // 🖼 Logo laden
-  const img = await loadImage("/logo.png");
-
-  const canvas = document.createElement("canvas");
-  canvas.width = img.width;
-  canvas.height = img.height;
-  const ctx = canvas.getContext("2d");
-  ctx.drawImage(img, 0, 0);
-
-  const imgData = canvas.toDataURL("image/png");
-
-  // Logo
-  doc.addImage(imgData, "PNG", 10, 10, 60, 20);
-
-  // Kopf rechts
-  doc.setFontSize(10);
-  doc.text("Kühl Entsorgung & Recycling", 140, 10);
-  doc.text("Südwest GmbH", 140, 15);
-  doc.text("Dispositionssystem", 140, 20);
-  doc.text(`Datum: ${heute}`, 140, 25);
-
-  // Titel
-  doc.setFontSize(18);
-  doc.text("Auftrag", 10, 40);
-
-  doc.line(10, 45, 200, 45);
-
-  doc.setFontSize(12);
-
-  let y = 60;
-
-  const line = (label, value) => {
-    doc.setFont(undefined, "bold");
-    doc.text(label, 10, y);
-
-    doc.setFont(undefined, "normal");
-    doc.text(value || "-", 80, y);
-
-    y += 10;
+  // 🖼 Bild laden (für Logo)
+  const loadImage = (url) => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.src = url;
+      img.crossOrigin = "anonymous";
+      img.onload = () => resolve(img);
+    });
   };
 
-  line("Auftragsnummer:", a.nummer);
-  line("Fahrer:", a.fahrer);
-  line("Straße:", a.strasse);
-  line("Ort:", a.plzOrt);
-  line("Material:", a.material);
-  line("Status:", a.status);
+  // 📄 PDF
+  const exportPDF = async (a) => {
+    const doc = new jsPDF();
 
-  // 📍 GPS
-  if (a.lat && a.lng) {
-    line("GPS:", `${a.lat}, ${a.lng}`);
-  }
+    const heute = new Date().toLocaleDateString("de-DE");
 
-  // 📅 Datum + Uhrzeit erledigt
-  if (a.erledigtAm) {
-    const d = new Date(a.erledigtAm);
+    // Logo
+    const img = await loadImage("/logo.png");
+    const canvas = document.createElement("canvas");
+    canvas.width = img.width;
+    canvas.height = img.height;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(img, 0, 0);
+    const imgData = canvas.toDataURL("image/png");
 
-    const datum = d.toLocaleDateString("de-DE");
-    const uhrzeit = d.toLocaleTimeString("de-DE", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    doc.addImage(imgData, "PNG", 10, 10, 60, 20);
 
-    line("Erledigt am:", datum);
-    line("Uhrzeit:", uhrzeit);
-  }
+    // Kopf
+    doc.setFontSize(10);
+    doc.text("Kühl Entsorgung & Recycling", 140, 10);
+    doc.text("Südwest GmbH", 140, 15);
+    doc.text("Dispositionssystem", 140, 20);
+    doc.text(`Datum: ${heute}`, 140, 25);
 
-  doc.save(`auftrag_${a.nummer}.pdf`);
-};
+    // Titel
+    doc.setFontSize(18);
+    doc.text("Auftrag", 10, 40);
+    doc.line(10, 45, 200, 45);
 
-  line("Auftragsnummer:", a.nummer);
-  line("Fahrer:", a.fahrer);
-  line("Straße:", a.strasse);
-  line("Ort:", a.plzOrt);
-  line("Material:", a.material);
-  line("Status:", a.status);
+    let y = 60;
 
-  if (a.lat && a.lng) {
-    line("GPS:", `${a.lat}, ${a.lng}`);
-  }
+    const line = (label, value) => {
+      doc.setFont(undefined, "bold");
+      doc.text(label, 10, y);
+      doc.setFont(undefined, "normal");
+      doc.text(value || "-", 80, y);
+      y += 10;
+    };
 
-  doc.save(`auftrag_${a.nummer}.pdf`);
-};
+    line("Auftragsnummer:", a.nummer);
+    line("Fahrer:", a.fahrer);
+    line("Straße:", a.strasse);
+    line("Ort:", a.plzOrt);
+    line("Material:", a.material);
+    line("Status:", a.status);
 
-  line("Auftragsnummer:", a.nummer);
-  line("Fahrer:", a.fahrer);
-  line("Straße:", a.strasse);
-  line("Ort:", a.plzOrt);
-  line("Material:", a.material);
-  line("Status:", a.status);
+    if (a.lat && a.lng) {
+      line("GPS:", `${a.lat}, ${a.lng}`);
+    }
 
-  if (a.lat && a.lng) {
-    line("GPS:", `${a.lat}, ${a.lng}`);
-  }
+    if (a.erledigtAm) {
+      const d = new Date(a.erledigtAm);
+      line("Erledigt am:", d.toLocaleDateString("de-DE"));
+      line("Uhrzeit:", d.toLocaleTimeString("de-DE", {
+        hour: "2-digit",
+        minute: "2-digit",
+      }));
+    }
 
-  // 💾 Speichern
-  doc.save(`auftrag_${a.nummer}.pdf`);
-};
+    doc.save(`auftrag_${a.nummer}.pdf`);
+  };
 
   const meineAuftraege = auftraege.filter(
     (a) => a.fahrer === user && a.status === "offen"
@@ -234,32 +189,21 @@ const exportPDF = async (a) => {
     <div style={{ padding: 15, fontFamily: "Arial" }}>
       <h1 style={{ textAlign: "center" }}>🚛 Fahrer App</h1>
 
-      {/* LOGIN */}
       {!user && (
         <div style={{ textAlign: "center" }}>
           <h2>Fahrer wählen</h2>
-
-          <select
-            value={loginName}
-            onChange={(e) => setLoginName(e.target.value)}
-            style={{ fontSize: 18, padding: 10, width: "80%" }}
-          >
+          <select value={loginName} onChange={(e) => setLoginName(e.target.value)}>
             <option value="">Bitte wählen</option>
             <option value="Max">Max</option>
             <option value="Tom">Tom</option>
             <option value="Ali">Ali</option>
             <option value="Dispo">Disponent</option>
           </select>
-
           <br /><br />
-
-          <button onClick={login} style={{ width: "80%", padding: 12 }}>
-            Start
-          </button>
+          <button onClick={login}>Start</button>
         </div>
       )}
 
-      {/* DISPO */}
       {user && isDisponent && (
         <>
           <h2>👨‍💼 Disponent</h2>
@@ -274,7 +218,7 @@ const exportPDF = async (a) => {
           <select name="material" value={form.material} onChange={handleChange}>
             <option value="">Material wählen</option>
             {MATERIALIEN.map((m) => (
-              <option key={m} value={m}>{m}</option>
+              <option key={m}>{m}</option>
             ))}
           </select>
 
@@ -290,24 +234,12 @@ const exportPDF = async (a) => {
           <hr />
 
           {auftraege.map((a) => (
-            <div key={a._id} style={{ borderBottom: "1px solid #ccc", marginBottom: 10 }}>
+            <div key={a._id}>
               <b>{a.nummer}</b><br />
               {a.strasse} - {a.plzOrt}<br />
-              Fahrer: {a.fahrer}<br />
-              Material: <b>{a.material}</b><br />
-              Status: {a.status}<br />
-
-              {a.lat && a.lng && (
-                <button
-                  onClick={() =>
-                    window.open(`https://www.google.com/maps?q=${a.lat},${a.lng}`)
-                  }
-                >
-                  📍 Standort anzeigen
-                </button>
-              )}
-
-              <br />
+              {a.fahrer}<br />
+              {a.material}<br />
+              {a.status}<br />
 
               <button onClick={() => exportPDF(a)}>📄 PDF</button>
               <button onClick={() => deleteAuftrag(a._id)}>🗑 Löschen</button>
@@ -316,29 +248,17 @@ const exportPDF = async (a) => {
         </>
       )}
 
-      {/* FAHRER */}
       {user && !isDisponent && (
         <>
           <h2>{user}</h2>
           <button onClick={logout}>Logout</button>
 
           {meineAuftraege.map((a) => (
-            <div key={a._id} style={{ borderBottom: "1px solid #ccc", marginBottom: 10 }}>
+            <div key={a._id}>
               <b>{a.nummer}</b><br />
               {a.strasse}<br />
               {a.plzOrt}<br />
-              Material: <b>{a.material}</b><br /><br />
-
-              <button
-                onClick={() => {
-                  const query = encodeURIComponent(a.strasse + " " + a.plzOrt);
-                  window.open(
-                    "https://www.google.com/maps/search/?api=1&query=" + query
-                  );
-                }}
-              >
-                Navigation
-              </button>
+              {a.material}<br />
 
               <button onClick={() => toggleStatus(a._id)}>
                 ✔ Erledigt
