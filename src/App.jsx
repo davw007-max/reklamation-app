@@ -92,7 +92,7 @@ function App() {
   const createPDF = (a) => {
     const pdf = new jsPDF();
 
-    const now = new Date();
+    const now = new Date().toLocaleString("de-DE");
     const year = now.getFullYear();
 
     const getKW = (d) => {
@@ -124,8 +124,10 @@ function App() {
     pdf.text(`Status: ${a.status}`, 10, y); y += 8;
 
     if (a.zeitErledigt) {
-      pdf.text(`Erledigt: ${a.zeitErledigt}`, 10, y); y += 8;
-    }
+  const d = new Date(a.zeitErledigt);
+  const formatted = d.toLocaleString("de-DE");
+  pdf.text(`Erledigt: ${formatted}`, 10, y);
+}
 
     if (a.gps) {
       pdf.text(`GPS: ${a.gps.lat}, ${a.gps.lng}`, 10, y);
