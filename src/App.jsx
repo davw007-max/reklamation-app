@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import jsPDF from "jspdf";
-import * as SignatureCanvas from "react-signature-canvas";
+import SignatureCanvas from "react-signature-canvas";
 
 const API = "https://reklamation-backend.onrender.com";
 
@@ -332,15 +332,15 @@ function App() {
 
         {/* ✍️ UNTERSCHRIFT */}
         <div style={{ marginTop: 15 }}>
-          <SignatureCanvas.default
-            ref={sigRef}
-            penColor="black"
-            canvasProps={{
-              width: 320,
-              height: 150,
-              style: { border: "2px solid black", borderRadius: 8 },
-            }}
-          />
+          <SignatureCanvas
+  ref={sigRef}
+  penColor="black"
+  canvasProps={{
+    width: 320,
+    height: 150,
+    style: { border: "2px solid black", borderRadius: 8 },
+  }}
+/>
         </div>
 
         <button
