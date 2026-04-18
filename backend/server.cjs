@@ -172,7 +172,7 @@ app.put("/auftraege/:id", async (req, res) => {
         { width: 150 }
       );
 
-      doc.moveTo(40, 80).lineTo(550, 80).stroke();
+      doc.moveTo(40, 100).lineTo(550, 100).stroke();
 
       let y = 100;
 
@@ -222,7 +222,7 @@ app.put("/auftraege/:id", async (req, res) => {
         doc.fillColor("black");
       }
 
-      doc.moveTo(40, 750).lineTo(550, 750).stroke();
+      doc.moveTo(40, 700).lineTo(550, 700).stroke();
 
       doc.fontSize(9).text(
         "Automatisch erstellt – Reklamations App",
