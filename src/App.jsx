@@ -1,14 +1,13 @@
 import { useState, useEffect } from "react";
 import { io } from "socket.io-client";
-import jsPDF from "jspdf";
 
 const API = "https://reklamation-backend.onrender.com";
-const MATERIALIEN = ["kom. Restmüll", "Kartonage", "LVP"];
 
 function App() {
   const [auftraege, setAuftraege] = useState([]);
   const [user, setUser] = useState(localStorage.getItem("fahrer") || "");
   const [loginName, setLoginName] = useState("");
+
   const [form, setForm] = useState({
     nummer: "",
     strasse: "",
@@ -19,33 +18,42 @@ function App() {
 
   const isDisponent = user === "Dispo";
 
-  // Socket
+  // 🔌 Socket
   useEffect(() => {
     const socket = io(API);
-    socket.on("auftraege", setAuftraege);
+
+    socket.on("auftraege", (data) => {
+      setAuftraege(data);
+    });
+
     return () => socket.disconnect();
   }, []);
 
-  // Laden
+  // 📦 Initial laden
   useEffect(() => {
     fetch(API + "/auftraege")
       .then((res) => res.json())
-      .then(setAuftraege);
+      .then(setAuftraege)
+      .catch(() => alert("Server nicht erreichbar"));
   }, []);
 
-  // Login
+  // 🔐 Login
   const login = async () => {
-    if (!loginName) return alert("Bitte wählen");
+    if (!loginName) return alert("Bitte Fahrer wählen");
 
     const res = await fetch(API + "/login", {
       method: "POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({ name: loginName })
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: loginName }),
     });
 
-    const data = await res.json();
-    localStorage.setItem("fahrer", data.name);
-    setUser(data.name);
+    if (res.ok) {
+      const data = await res.json();
+      localStorage.setItem("fahrer", data.name);
+      setUser(data.name);
+    } else {
+      alert("Login fehlgeschlagen");
+    }
   };
 
   const logout = () => {
@@ -53,16 +61,17 @@ function App() {
     setUser("");
   };
 
-  const handleChange = (e) =>
+  // 🧾 Formular
+  const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+  };
 
   const addAuftrag = async () => {
-    if (!form.material || !form.fahrer)
-      return alert("Material + Fahrer wählen");
+    if (!form.fahrer) return alert("Fahrer auswählen!");
 
     await fetch(API + "/auftraege", {
       method: "POST",
-      headers: {"Content-Type":"application/json"},
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form),
     });
 
@@ -75,160 +84,162 @@ function App() {
     });
   };
 
+  // 🗑 Löschen
   const deleteAuftrag = async (id) => {
     await fetch(`${API}/auftraege/${id}`, { method: "DELETE" });
   };
 
-  // 🔥 GPS + Zeit
-  const toggleStatus = async (id) => {
+  // ✔ Status + GPS
+  const toggleStatus = (id) => {
+    if (!navigator.geolocation) {
+      alert("GPS nicht verfügbar");
+      return;
+    }
+
     navigator.geolocation.getCurrentPosition(async (pos) => {
       await fetch(`${API}/auftraege/${id}`, {
         method: "PUT",
-        headers: {"Content-Type":"application/json"},
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           lat: pos.coords.latitude,
           lng: pos.coords.longitude,
-          status: "erledigt",
-          erledigtAm: new Date(),
         }),
       });
     });
-  };
-
-  // Logo Loader
-  const loadImage = (url) =>
-    new Promise((resolve) => {
-      const img = new Image();
-      img.src = url;
-      img.onload = () => resolve(img);
-    });
-
-  // PDF
-  const exportPDF = async (a) => {
-    const doc = new jsPDF();
-
-    const img = await loadImage("/logo.png");
-    const canvas = document.createElement("canvas");
-    canvas.width = img.width;
-    canvas.height = img.height;
-    canvas.getContext("2d").drawImage(img, 0, 0);
-    const imgData = canvas.toDataURL("image/png");
-
-    doc.addImage(imgData, "PNG", 10, 10, 60, 20);
-
-    doc.text("Auftrag", 10, 40);
-    doc.line(10, 45, 200, 45);
-
-    let y = 60;
-    const line = (l, v) => {
-      doc.text(l, 10, y);
-      doc.text(v || "-", 80, y);
-      y += 10;
-    };
-
-    line("Nr:", a.nummer);
-    line("Fahrer:", a.fahrer);
-    line("Adresse:", `${a.strasse}, ${a.plzOrt}`);
-    line("Material:", a.material);
-    line("Status:", a.status);
-
-    if (a.lat) line("GPS:", `${a.lat}, ${a.lng}`);
-
-    if (a.erledigtAm) {
-      const d = new Date(a.erledigtAm);
-      line("Datum:", d.toLocaleDateString("de-DE"));
-      line("Zeit:", d.toLocaleTimeString("de-DE"));
-    }
-
-    doc.save(`auftrag_${a.nummer}.pdf`);
   };
 
   const meineAuftraege = auftraege.filter(
     (a) => a.fahrer === user && a.status === "offen"
   );
 
-  return (
-    <div style={{ padding: 15 }}>
-      <h1>🚛 Fahrer App</h1>
+  const cardStyle = {
+    background: "#f4f4f4",
+    padding: 15,
+    marginBottom: 15,
+    borderRadius: 10,
+  };
 
+  const buttonStyle = {
+    width: "100%",
+    padding: 10,
+    marginTop: 5,
+    borderRadius: 8,
+    border: "none",
+  };
+
+  return (
+    <div style={{ padding: 15, fontFamily: "Arial" }}>
+      <h1 style={{ textAlign: "center" }}>🚛 Fahrer App</h1>
+
+      {/* LOGIN */}
       {!user && (
-        <>
-          <select onChange={(e) => setLoginName(e.target.value)}>
-            <option value="">Wählen</option>
-            <option>Max</option>
-            <option>Tom</option>
-            <option>Ali</option>
+        <div style={{ textAlign: "center" }}>
+          <h2>Fahrer wählen</h2>
+
+          <select
+            value={loginName}
+            onChange={(e) => setLoginName(e.target.value)}
+            style={{ fontSize: 18, padding: 10, width: "80%" }}
+          >
+            <option value="">Bitte wählen</option>
+            <option value="Max">Max</option>
+            <option value="Tom">Tom</option>
+            <option value="Ali">Ali</option>
             <option value="Dispo">Disponent</option>
           </select>
-          <button onClick={login}>Start</button>
-        </>
+
+          <br /><br />
+
+          <button onClick={login} style={{ ...buttonStyle, background: "#007bff", color: "white" }}>
+            Start
+          </button>
+        </div>
       )}
 
+      {/* DISPO */}
       {user && isDisponent && (
         <>
+          <h2>👨‍💼 Disponent</h2>
           <button onClick={logout}>Logout</button>
 
-          <input name="nummer" placeholder="Nr" onChange={handleChange}/>
-          <input name="strasse" placeholder="Straße" onChange={handleChange}/>
-          <input name="plzOrt" placeholder="Ort" onChange={handleChange}/>
+          <h3>Neuer Auftrag</h3>
 
-          <select name="material" onChange={handleChange}>
-            <option value="">Material</option>
-            {MATERIALIEN.map((m) => <option key={m}>{m}</option>)}
-          </select>
+          <input name="nummer" placeholder="Nummer" onChange={handleChange} />
+          <input name="strasse" placeholder="Straße" onChange={handleChange} />
+          <input name="plzOrt" placeholder="PLZ Ort" onChange={handleChange} />
+          <input name="material" placeholder="Material" onChange={handleChange} />
 
           <select name="fahrer" onChange={handleChange}>
-            <option value="">Fahrer</option>
-            <option>Max</option>
-            <option>Tom</option>
-            <option>Ali</option>
+            <option value="">Fahrer wählen</option>
+            <option value="Max">Max</option>
+            <option value="Tom">Tom</option>
+            <option value="Ali">Ali</option>
           </select>
 
-          <button onClick={addAuftrag}>Speichern</button>
+          <button style={{ ...buttonStyle, background: "green", color: "white" }} onClick={addAuftrag}>
+            ➕ Auftrag erstellen
+          </button>
+
+          <hr />
 
           {auftraege.map((a) => (
-            <div key={a._id}>
-              <b>{a.nummer}</b><br/>
-              {a.strasse}<br/>
-              {a.plzOrt}<br/>
-              {a.status}<br/>
+            <div key={a._id} style={cardStyle}>
+              <b>{a.nummer}</b><br />
+              {a.fahrer}<br />
+              <span style={{ color: a.status === "erledigt" ? "green" : "red" }}>
+                {a.status}
+              </span>
 
-              {/* 📍 GPS sichtbar */}
-              {a.lat && (
-                <button onClick={() =>
-                  window.open(`https://www.google.com/maps?q=${a.lat},${a.lng}`)
-                }>
-                  📍 Standort
+              {a.gps && a.gps.lat && (
+                <button
+                  style={{ ...buttonStyle, background: "#007bff", color: "white" }}
+                  onClick={() =>
+                    window.open(`https://www.google.com/maps?q=${a.gps.lat},${a.gps.lng}`)
+                  }
+                >
+                  📍 Standort anzeigen
                 </button>
               )}
 
-              <button onClick={() => exportPDF(a)}>PDF</button>
-              <button onClick={() => deleteAuftrag(a._id)}>X</button>
+              <button
+                style={{ ...buttonStyle, background: "red", color: "white" }}
+                onClick={() => deleteAuftrag(a._id)}
+              >
+                🗑 Löschen
+              </button>
             </div>
           ))}
         </>
       )}
 
+      {/* FAHRER */}
       {user && !isDisponent && (
         <>
+          <h2>{user}</h2>
           <button onClick={logout}>Logout</button>
 
           {meineAuftraege.map((a) => (
-            <div key={a._id}>
-              <b>{a.nummer}</b><br/>
-              {a.strasse}<br/>
+            <div key={a._id} style={cardStyle}>
+              <b>{a.nummer}</b><br />
+              {a.strasse}<br />
+              {a.plzOrt}<br />
 
-              {/* Navigation */}
-              <button onClick={() =>
-                window.open(
-                  "https://www.google.com/maps/search/?api=1&query=" +
-                  encodeURIComponent(a.strasse + " " + a.plzOrt)
-                )
-              }>
-                Navigation
+              <button
+                style={{ ...buttonStyle, background: "#007bff", color: "white" }}
+                onClick={() => {
+                  const query = encodeURIComponent(a.strasse + " " + a.plzOrt);
+                  window.open(
+                    "https://www.google.com/maps/search/?api=1&query=" + query
+                  );
+                }}
+              >
+                🗺 Navigation
               </button>
 
-              <button onClick={() => toggleStatus(a._id)}>
+              <button
+                style={{ ...buttonStyle, background: "green", color: "white" }}
+                onClick={() => toggleStatus(a._id)}
+              >
                 ✔ Erledigt
               </button>
             </div>
