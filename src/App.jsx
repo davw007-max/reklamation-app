@@ -98,34 +98,64 @@ function App() {
   };
 
   // ✔ Status + GPS + ✍️ Unterschrift
-  const toggleStatus = (id) => {
-    if (!navigator.geolocation) {
-      alert("GPS nicht verfügbar");
-      return;
+  const toggleStatus = async (id) => {
+  try {
+    // 🖊 Signatur holen (optional abgesichert)
+    let signature = null;
+
+    if (sigRef.current && !sigRef.current.isEmpty()) {
+      signature = sigRef.current
+        .getTrimmedCanvas()
+        .toDataURL("image/png");
     }
 
-    const signature = sigRef.current
-      ?.getTrimmedCanvas()
-      .toDataURL("image/png");
+    // 📍 GPS holen (mit Fallback!)
+    const getPosition = () =>
+      new Promise((resolve, reject) => {
+        if (!navigator.geolocation) {
+          return resolve(null); // kein GPS → trotzdem weitermachen
+        }
 
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        await fetch(`${API}/auftraege/${id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            lat: pos.coords.latitude,
-            lng: pos.coords.longitude,
-            unterschrift: signature,
-          }),
-        });
+        navigator.geolocation.getCurrentPosition(
+          (pos) => resolve(pos),
+          (err) => resolve(null), // Fehler ignorieren → nicht blockieren!
+          { timeout: 5000 }
+        );
+      });
 
-        sigRef.current.clear();
-        loadData();
-      },
-      () => alert("GPS Zugriff verweigert")
-    );
-  };
+    const pos = await getPosition();
+
+    const payload = {
+      lat: pos?.coords?.latitude,
+      lng: pos?.coords?.longitude,
+      unterschrift: signature,
+    };
+
+    console.log("Sende:", payload); // 🔥 DEBUG
+
+    const res = await fetch(`${API}/auftraege/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      throw new Error("Server Fehler");
+    }
+
+    // 🧹 Signatur leeren
+    if (sigRef.current) {
+      sigRef.current.clear();
+    }
+
+    // 🔄 neu laden
+    loadData();
+
+  } catch (err) {
+    console.error("Fehler beim Erledigen:", err);
+    alert("Fehler beim Erledigen");
+  }
+};
 
   // 📅 Datum
   const formatDate = (d) => {
