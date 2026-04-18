@@ -3,8 +3,6 @@ const cors = require("cors");
 const http = require("http");
 const { Server } = require("socket.io");
 const mongoose = require("mongoose");
-const { lat, lng, unterschrift } = req.body;
-
 
 // ================= CONFIG =================
 const PORT = process.env.PORT || 3001;
@@ -48,7 +46,7 @@ const AuftragSchema = new mongoose.Schema({
   status: String,
   zeit: String,
   zeitErledigt: Date,
-  unterschrift: String, // 👈 NEU
+  unterschrift: String,
   gps: {
     lat: Number,
     lng: Number,
@@ -98,12 +96,6 @@ app.post("/login", (req, res) => {
 
 // ================= ROUTEN =================
 
-const { lat, lng, unterschrift } = req.body;
-
-if (unterschrift) {
-  auftrag.unterschrift = unterschrift;
-}
-
 // Alle Aufträge
 app.get("/auftraege", async (req, res) => {
   try {
@@ -132,15 +124,14 @@ app.post("/auftraege", async (req, res) => {
   }
 });
 
-// Status + GPS
+// ✔ Status + GPS + ✍️ Unterschrift
 app.put("/auftraege/:id", async (req, res) => {
   try {
-    const { lat, lng } = req.body;
+    const { lat, lng, unterschrift } = req.body;
 
     const auftrag = await Auftrag.findById(req.params.id);
     if (!auftrag) return res.sendStatus(404);
 
-    // Status wechseln
     const wirdErledigt = auftrag.status === "offen";
     auftrag.status = wirdErledigt ? "erledigt" : "offen";
 
@@ -149,7 +140,12 @@ app.put("/auftraege/:id", async (req, res) => {
       auftrag.gps = { lat, lng };
     }
 
-    // 👉 NUR wenn erledigt → Zeit speichern
+    // ✍️ Unterschrift speichern
+    if (unterschrift) {
+      auftrag.unterschrift = unterschrift;
+    }
+
+    // 🕒 Zeit nur beim Erledigen
     if (wirdErledigt) {
       auftrag.zeitErledigt = new Date();
     }
@@ -159,15 +155,20 @@ app.put("/auftraege/:id", async (req, res) => {
 
     res.json({ success: true });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: "Fehler beim Update" });
   }
 });
 
-// Löschen
+// 🗑 Löschen
 app.delete("/auftraege/:id", async (req, res) => {
-  await Auftrag.findByIdAndDelete(req.params.id);
-  await updateClients();
-  res.json({ success: true });
+  try {
+    await Auftrag.findByIdAndDelete(req.params.id);
+    await updateClients();
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: "Fehler beim Löschen" });
+  }
 });
 
 // ================= START =================
