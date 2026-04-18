@@ -26,11 +26,14 @@ function App() {
   const loadData = () => {
     fetch(API + "/auftraege")
       .then((res) => res.json())
-      .then(setAuftraege);
+      .then(setAuftraege)
+      .catch((err) => console.error("Fehler beim Laden:", err));
   };
 
   // 🔐 Login
   const login = async () => {
+    if (!loginName) return alert("Bitte auswählen");
+
     const res = await fetch(API + "/login", {
       method: "POST",
       headers: {
@@ -43,6 +46,8 @@ function App() {
       const data = await res.json();
       localStorage.setItem("fahrer", data.name);
       setUser(data.name);
+    } else {
+      alert("Login fehlgeschlagen");
     }
   };
 
@@ -53,6 +58,8 @@ function App() {
 
   // ➕ Auftrag
   const addAuftrag = async () => {
+    if (!form.fahrer) return alert("Fahrer wählen!");
+
     await fetch(API + "/auftraege", {
       method: "POST",
       headers: {
@@ -74,66 +81,91 @@ function App() {
 
   // ✔ Status + GPS
   const toggleStatus = (id) => {
-    navigator.geolocation.getCurrentPosition(async (pos) => {
-      await fetch(`${API}/auftraege/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          lat: pos.coords.latitude,
-          lng: pos.coords.longitude,
-        }),
-      });
+    if (!navigator.geolocation) {
+      alert("GPS nicht verfügbar");
+      return;
+    }
 
-      loadData();
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        await fetch(`${API}/auftraege/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+          }),
+        });
+
+        loadData();
+      },
+      () => alert("GPS Zugriff verweigert")
+    );
+  };
+
+  // 📅 Datum DE
+  const formatDate = (d) => {
+    if (!d) return "-";
+    return new Date(d).toLocaleString("de-DE", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
     });
+  };
+
+  // 📅 Kalenderwoche
+  const getKW = (date) => {
+    const d = new Date(date);
+    d.setDate(d.getDate() + 4 - (d.getDay() || 7));
+    const yearStart = new Date(d.getFullYear(), 0, 1);
+    return Math.ceil(((d - yearStart) / 86400000 + 1) / 7);
   };
 
   // 📄 PDF
   const createPDF = (a) => {
-    const pdf = new jsPDF();
+    try {
+      const pdf = new jsPDF();
 
-    const now = new Date().toLocaleString("de-DE");
-    const year = now.getFullYear();
+      const now = new Date();
+      const year = now.getFullYear();
+      const kw = getKW(now);
 
-    const getKW = (d) => {
-      const date = new Date(d);
-      date.setDate(date.getDate() + 4 - (date.getDay() || 7));
-      const yearStart = new Date(date.getFullYear(), 0, 1);
-      return Math.ceil(((date - yearStart) / 86400000 + 1) / 7);
-    };
+      let y = 20;
 
-    const kw = getKW(now);
+      pdf.setFontSize(16);
+      pdf.text("AUFTRAGSBERICHT", 10, y);
 
-    let y = 20;
+      y += 15;
 
-    pdf.setFontSize(16);
-    pdf.text("AUFTRAGSBERICHT", 10, y);
+      pdf.setFontSize(11);
+      pdf.text(`Nr: ${a.nummer}`, 10, y); y += 8;
+      pdf.text(`Fahrer: ${a.fahrer}`, 10, y); y += 8;
+      pdf.text(`Material: ${a.material}`, 10, y); y += 8;
 
-    y += 15;
+      y += 5;
 
-    pdf.setFontSize(11);
-    pdf.text(`Nr: ${a.nummer}`, 10, y); y += 8;
-    pdf.text(`Fahrer: ${a.fahrer}`, 10, y); y += 8;
-    pdf.text(`Material: ${a.material}`, 10, y); y += 8;
+      pdf.text(`Adresse: ${a.strasse}`, 10, y); y += 8;
+      pdf.text(`${a.plzOrt}`, 10, y); y += 10;
 
-    y += 5;
+      pdf.text(`Status: ${a.status}`, 10, y); y += 8;
 
-    pdf.text(`Adresse: ${a.strasse}`, 10, y); y += 8;
-    pdf.text(`${a.plzOrt}`, 10, y); y += 10;
+      // 🕒 Erledigt Zeit
+      pdf.text(`Erledigt: ${formatDate(a.zeitErledigt)}`, 10, y); y += 8;
 
-    pdf.text(`Status: ${a.status}`, 10, y); y += 8;
+      // 📍 GPS
+      if (a.gps?.lat && a.gps?.lng) {
+        pdf.text(`GPS: ${a.gps.lat}, ${a.gps.lng}`, 10, y);
+      }
 
-    if (a.zeitErledigt) {
-  const d = new Date(a.zeitErledigt);
-  const formatted = d.toLocaleString("de-DE");
-  pdf.text(`Erledigt: ${formatted}`, 10, y);
-}
+      pdf.save(`${year}_KW${kw}_${a.nummer}.pdf`);
 
-    if (a.gps) {
-      pdf.text(`GPS: ${a.gps.lat}, ${a.gps.lng}`, 10, y);
+    } catch (err) {
+      console.error("PDF Fehler:", err);
+      alert("PDF konnte nicht erstellt werden");
     }
-
-    pdf.save(`${year}_KW${kw}_${a.nummer}.pdf`);
   };
 
   const meine = auftraege.filter(
@@ -165,13 +197,13 @@ function App() {
 
           <h3>Neuer Auftrag</h3>
 
-          <input placeholder="Nr" onChange={(e) => setForm({...form, nummer: e.target.value})} />
-          <input placeholder="Straße" onChange={(e) => setForm({...form, strasse: e.target.value})} />
-          <input placeholder="Ort" onChange={(e) => setForm({...form, plzOrt: e.target.value})} />
-          <input placeholder="Material" onChange={(e) => setForm({...form, material: e.target.value})} />
+          <input placeholder="Nr" value={form.nummer} onChange={(e) => setForm({...form, nummer: e.target.value})} />
+          <input placeholder="Straße" value={form.strasse} onChange={(e) => setForm({...form, strasse: e.target.value})} />
+          <input placeholder="Ort" value={form.plzOrt} onChange={(e) => setForm({...form, plzOrt: e.target.value})} />
+          <input placeholder="Material" value={form.material} onChange={(e) => setForm({...form, material: e.target.value})} />
 
-          <select onChange={(e) => setForm({...form, fahrer: e.target.value})}>
-            <option>Fahrer</option>
+          <select value={form.fahrer} onChange={(e) => setForm({...form, fahrer: e.target.value})}>
+            <option value="">Fahrer</option>
             <option>Max</option>
             <option>Tom</option>
             <option>Ali</option>
