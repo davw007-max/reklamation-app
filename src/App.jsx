@@ -71,7 +71,14 @@ function App() {
       pdf.text(`GPS: ${a.gps.lat}, ${a.gps.lng}`, 10, y); y += 8;
     }
 
-    pdf.text(`Erstellt am: ${now.toLocaleString()}`, 10, y);
+    if (a.zeitErledigt) {
+  const date = new Date(a.zeitErledigt);
+  pdf.text(
+    `Erledigt am: ${date.toLocaleDateString()} ${date.toLocaleTimeString()}`,
+    10,
+    y
+  );
+}
 
     const filename = `${year}_KW${kw}_${a.nummer}.pdf`;
     pdf.save(filename);
