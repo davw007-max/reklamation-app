@@ -265,39 +265,120 @@ function App() {
       )}
 
       {/* FAHRER */}
-      {user && !isDispo && (
-        <>
-          <button onClick={logout}>Logout</button>
+{user && !isDispo && (
+  <>
+    <button
+      onClick={logout}
+      style={{
+        width: "100%",
+        padding: 15,
+        fontSize: 18,
+        marginBottom: 20,
+      }}
+    >
+      🚪 Logout
+    </button>
 
-          {meine.map((a) => (
-            <div key={a._id} style={{ marginBottom: 20 }}>
-              {/* ✅ HIER war dein Problem → Anzeige ergänzt */}
-              <b>{a.nummer}</b><br />
-              {a.strasse}<br />
-              {a.plzOrt}<br />
-              <b>{a.material}</b><br /><br />
+    {meine.map((a) => (
+      <div
+        key={a._id}
+        style={{
+          marginBottom: 25,
+          padding: 15,
+          borderRadius: 10,
+          background: "#f4f4f4",
+        }}
+      >
+        {/* 📄 AUFTRAG */}
+        <div style={{ fontSize: 20, fontWeight: "bold" }}>
+          {a.nummer}
+        </div>
 
-              <SignatureCanvas.default
-                ref={sigRef}
-                penColor="black"
-                canvasProps={{
-                  width: 300,
-                  height: 150,
-                  style: { border: "1px solid black" },
-                }}
-              />
+        <div style={{ marginTop: 5 }}>
+          📍 {a.strasse}
+        </div>
 
-              <button onClick={() => sigRef.current.clear()}>
-                ❌ Löschen
-              </button>
+        <div>
+          {a.plzOrt}
+        </div>
 
-              <button onClick={() => toggleStatus(a._id)}>
-                ✔ erledigt
-              </button>
-            </div>
-          ))}
-        </>
-      )}
+        <div style={{ marginTop: 5, fontWeight: "bold" }}>
+          ♻️ {a.material}
+        </div>
+
+        {/* 🗺 NAVI BUTTON */}
+        <button
+          onClick={() => {
+            const query = encodeURIComponent(
+              a.strasse + " " + a.plzOrt
+            );
+            window.open(
+              "https://www.google.com/maps/search/?api=1&query=" + query
+            );
+          }}
+          style={{
+            width: "100%",
+            padding: 15,
+            fontSize: 18,
+            marginTop: 10,
+            background: "#007bff",
+            color: "white",
+            border: "none",
+            borderRadius: 8,
+          }}
+        >
+          🗺 Navigation starten
+        </button>
+
+        {/* ✍️ UNTERSCHRIFT */}
+        <div style={{ marginTop: 15 }}>
+          <SignatureCanvas.default
+            ref={sigRef}
+            penColor="black"
+            canvasProps={{
+              width: 320,
+              height: 150,
+              style: { border: "2px solid black", borderRadius: 8 },
+            }}
+          />
+        </div>
+
+        <button
+          onClick={() => sigRef.current.clear()}
+          style={{
+            width: "100%",
+            padding: 12,
+            fontSize: 16,
+            marginTop: 5,
+            background: "#6c757d",
+            color: "white",
+            border: "none",
+            borderRadius: 8,
+          }}
+        >
+          ❌ Unterschrift löschen
+        </button>
+
+        {/* ✔ ERLEDIGT BUTTON */}
+        <button
+          onClick={() => toggleStatus(a._id)}
+          style={{
+            width: "100%",
+            padding: 18,
+            fontSize: 20,
+            marginTop: 10,
+            background: "green",
+            color: "white",
+            border: "none",
+            borderRadius: 10,
+          }}
+        >
+          ✔ Auftrag erledigt
+        </button>
+      </div>
+    ))}
+  </>
+)}
     </div>
   );
 }
