@@ -100,25 +100,26 @@ function App() {
   // ✔ Status + GPS + ✍️ Unterschrift
   const toggleStatus = async (id) => {
   try {
-    // 🖊 Signatur holen (optional abgesichert)
     let signature = null;
 
-    if (sigRef.current && !sigRef.current.isEmpty()) {
+    // ✅ SAFE CHECK (wichtig!)
+    if (
+      sigRef.current &&
+      typeof sigRef.current.getTrimmedCanvas === "function" &&
+      !sigRef.current.isEmpty()
+    ) {
       signature = sigRef.current
         .getTrimmedCanvas()
         .toDataURL("image/png");
     }
 
-    // 📍 GPS holen (mit Fallback!)
     const getPosition = () =>
-      new Promise((resolve, reject) => {
-        if (!navigator.geolocation) {
-          return resolve(null); // kein GPS → trotzdem weitermachen
-        }
+      new Promise((resolve) => {
+        if (!navigator.geolocation) return resolve(null);
 
         navigator.geolocation.getCurrentPosition(
           (pos) => resolve(pos),
-          (err) => resolve(null), // Fehler ignorieren → nicht blockieren!
+          () => resolve(null),
           { timeout: 5000 }
         );
       });
@@ -131,26 +132,17 @@ function App() {
       unterschrift: signature,
     };
 
-    console.log("Sende:", payload); // 🔥 DEBUG
+    console.log("SEND:", payload);
 
-    const res = await fetch(`${API}/auftraege/${id}`, {
+    await fetch(`${API}/auftraege/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
 
-    if (!res.ok) {
-      throw new Error("Server Fehler");
-    }
+    if (sigRef.current) sigRef.current.clear();
 
-    // 🧹 Signatur leeren
-    if (sigRef.current) {
-      sigRef.current.clear();
-    }
-
-    // 🔄 neu laden
     loadData();
-
   } catch (err) {
     console.error("Fehler beim Erledigen:", err);
     alert("Fehler beim Erledigen");
@@ -296,20 +288,17 @@ function App() {
         <>
           <button onClick={logout}>Logout</button>
 
-          {meine.map((a) => (
-            <div key={a._id}>
-              <b>{a.nummer}</b><br />
-              {a.strasse}<br />
-
-              <SignatureCanvas
-                ref={sigRef}
-                penColor="black"
-                canvasProps={{
-                  width: 300,
-                  height: 150,
-                  style: { border: "1px solid black" },
-                }}
-              />
+          {meine.map((a, index) => (
+  <div key={a._id}>
+    <SignatureCanvas
+      ref={index === 0 ? sigRef : null}  // 👈 nur EIN Canvas nutzt ref
+      penColor="black"
+      canvasProps={{
+        width: 300,
+        height: 150,
+        style: { border: "1px solid black" },
+      }}
+    />
 
               <button onClick={() => sigRef.current.clear()}>
                 ❌ Löschen
