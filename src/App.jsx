@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { io } from "socket.io-client";
 import jsPDF from "jspdf";
 
 const API = "https://reklamation-backend.onrender.com";
@@ -7,16 +6,24 @@ const API = "https://reklamation-backend.onrender.com";
 function App() {
   const [auftraege, setAuftraege] = useState([]);
 
-  const socket = io(API, {
-  transports: ["websocket"],
-  withCredentials: true,
-});
+  // 📦 Daten laden (WICHTIG!)
+  useEffect(() => {
+    fetch(API + "/auftraege")
+      .then((res) => res.json())
+      .then((data) => {
+        console.log("Daten:", data);
+        setAuftraege(data);
+      })
+      .catch((err) => {
+        console.error("Fehler:", err);
+        alert("Backend nicht erreichbar");
+      });
+  }, []);
 
   // 📄 PDF pro Auftrag
   const createPDF = (a) => {
     const pdf = new jsPDF();
 
-    // 📅 Datum + KW
     const now = new Date();
     const year = now.getFullYear();
 
@@ -30,46 +37,72 @@ function App() {
 
     const kw = getKW(now);
 
-    // 🖼 Logo (Base64 einfügen!)
-    const logo = ""; // 👉 hier später dein Base64 Logo
+    // 👉 LOGO (optional später)
+    const logo = "";
 
     if (logo) {
-      pdf.addImage(logo, "PNG", 10, 10, 50, 20);
+      pdf.addImage(logo, "PNG", 140, 10, 50, 20);
     }
 
     pdf.setFontSize(18);
-    pdf.text("Auftragsbericht", 10, 40);
+    pdf.text("AUFTRAGSBERICHT", 10, 20);
 
-    pdf.setFontSize(12);
+    pdf.setFontSize(11);
 
-    let y = 60;
+    let y = 40;
 
     pdf.text(`Auftragsnummer: ${a.nummer}`, 10, y); y += 8;
-    pdf.text(`Adresse: ${a.strasse}`, 10, y); y += 8;
-    pdf.text(`${a.plzOrt}`, 10, y); y += 8;
-    pdf.text(`Material: ${a.material}`, 10, y); y += 8;
     pdf.text(`Fahrer: ${a.fahrer}`, 10, y); y += 8;
+    pdf.text(`Material: ${a.material}`, 10, y); y += 8;
+
+    y += 5;
+
+    pdf.text("Adresse:", 10, y); y += 8;
+    pdf.text(a.strasse || "-", 10, y); y += 8;
+    pdf.text(a.plzOrt || "-", 10, y); y += 10;
+
     pdf.text(`Status: ${a.status}`, 10, y); y += 8;
+
+    if (a.zeitErledigt) {
+      pdf.text(`Erledigt am: ${a.zeitErledigt}`, 10, y); y += 8;
+    }
 
     if (a.gps) {
       pdf.text(`GPS: ${a.gps.lat}, ${a.gps.lng}`, 10, y); y += 8;
     }
 
-    pdf.text(`Datum: ${new Date().toLocaleString()}`, 10, y);
+    pdf.text(`Erstellt am: ${now.toLocaleString()}`, 10, y);
 
-    // 📄 Dateiname
     const filename = `${year}_KW${kw}_${a.nummer}.pdf`;
-
     pdf.save(filename);
   };
 
   return (
-    <div>
-      <h2>Dispo</h2>
+    <div style={{ padding: 20, fontFamily: "Arial" }}>
+      <h1>📋 Dispo Übersicht</h1>
+
+      {auftraege.length === 0 && <p>Keine Aufträge vorhanden</p>}
 
       {auftraege.map((a) => (
-        <div key={a._id}>
+        <div
+          key={a._id}
+          style={{
+            border: "1px solid #ccc",
+            borderRadius: 10,
+            padding: 10,
+            marginBottom: 10,
+          }}
+        >
           <b>{a.nummer}</b><br />
+          {a.strasse}<br />
+          {a.plzOrt}<br />
+          <b>{a.status}</b><br />
+
+          {a.gps && (
+            <div>
+              📍 {a.gps.lat}, {a.gps.lng}
+            </div>
+          )}
 
           <button onClick={() => createPDF(a)}>
             📄 PDF erstellen
