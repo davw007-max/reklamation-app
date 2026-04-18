@@ -204,6 +204,114 @@ https://www.google.com/maps?q=${auftrag.gps?.lat},${auftrag.gps?.lng}
     console.error("❌ Fehler:", err);
     res.status(500).json({ error: "Server Fehler" });
   }
+  const doc = new PDFDocument({
+  margin: 40
+});
+
+const chunks = [];
+
+doc.on("data", (chunk) => chunks.push(chunk));
+
+doc.on("end", async () => {
+  const pdfBuffer = Buffer.concat(chunks);
+
+  await transporter.sendMail({
+    from: process.env.MAIL_USER,
+    to: process.env.MAIL_TO,
+    subject: `Auftrag ${auftrag.nummer} erledigt`,
+    text: "Auftragsbericht im Anhang",
+    attachments: [
+      {
+        filename: `auftrag_${auftrag.nummer}.pdf`,
+        content: pdfBuffer,
+      },
+    ],
+  });
+
+  console.log("📧 Mail versendet");
+});
+
+
+// ================= HEADER =================
+doc.fontSize(20).text("AUFTRAGSBERICHT", 40, 40);
+
+// 🖼 Logo (rechts)
+doc.image("logo.png", 400, 30, { width: 150 });
+
+// Linie
+doc.moveTo(40, 80).lineTo(550, 80).stroke();
+
+
+// ================= INHALT =================
+let y = 100;
+
+// 📊 AUFTRAG
+doc.fontSize(12).font("Helvetica-Bold").text("Auftragsdaten:", 40, y);
+y += 20;
+
+doc.font("Helvetica");
+doc.text(`Nummer: ${auftrag.nummer}`, 40, y); y += 15;
+doc.text(`Fahrer: ${auftrag.fahrer}`, 40, y); y += 15;
+doc.text(`Material: ${auftrag.material}`, 40, y); y += 25;
+
+
+// 📍 ADRESSE
+doc.font("Helvetica-Bold").text("Adresse:", 40, y);
+y += 20;
+
+doc.font("Helvetica");
+doc.text(auftrag.strasse, 40, y); y += 15;
+doc.text(auftrag.plzOrt, 40, y); y += 25;
+
+
+// 📄 STATUS
+doc.font("Helvetica-Bold").text("Status:", 40, y);
+y += 20;
+
+doc.font("Helvetica");
+doc.text(`Status: ${auftrag.status}`, 40, y); y += 15;
+
+doc.text(
+  `Erledigt: ${new Date(auftrag.zeitErledigt).toLocaleString("de-DE")}`,
+  40,
+  y
+);
+y += 25;
+
+
+// 📍 GPS
+if (auftrag.gps?.lat) {
+  doc.font("Helvetica-Bold").text("GPS:", 40, y);
+  y += 20;
+
+  doc.font("Helvetica");
+  doc.text(`${auftrag.gps.lat}, ${auftrag.gps.lng}`, 40, y);
+  y += 15;
+
+  doc.fillColor("blue").text(
+    `https://www.google.com/maps?q=${auftrag.gps.lat},${auftrag.gps.lng}`,
+    40,
+    y,
+    { link: true }
+  );
+
+  doc.fillColor("black");
+}
+
+
+// ================= FOOTER =================
+doc.moveTo(40, 750).lineTo(550, 750).stroke();
+
+doc.fontSize(9).text(
+  "Automatisch erstellt – Reklamations App",
+  40,
+  760,
+  { align: "center" }
+);
+
+
+// ================= END =================
+doc.end();
 });
 
 // Löschen
