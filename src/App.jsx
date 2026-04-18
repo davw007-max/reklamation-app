@@ -175,7 +175,7 @@ function App() {
         pdf.text(`GPS: ${a.gps.lat}, ${a.gps.lng}`, 10, y);
       }
 
-      pdf.save(`${year}_KW${kw}_${a.nummer}.pdf`);
+      pdf.save(`${year}_KW${kw}_${date}_${a.nummer}.pdf`);
     } catch (err) {
       console.error("PDF Fehler:", err);
       alert("PDF konnte nicht erstellt werden");
