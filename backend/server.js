@@ -1,84 +1,158 @@
-import express from "express";
-import mongoose from "mongoose";
-import cors from "cors";
-import dotenv from "dotenv";
+const express = require("express");
+const cors = require("cors");
+const http = require("http");
+const { Server } = require("socket.io");
+const mongoose = require("mongoose");
 
-dotenv.config();
-
+// ================= APP =================
 const app = express();
-const PORT = process.env.PORT || 3001;
-
-// Middleware
 app.use(cors());
 app.use(express.json());
 
-// =======================
-// 🔌 MongoDB Verbindung
-// =======================
-const MONGO_URI = process.env.MONGO_URI;
-
-if (!MONGO_URI) {
-  console.error("❌ MONGO_URI fehlt in ENV!");
-  process.exit(1);
-}
-
-mongoose.connect(MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-.then(() => console.log("✅ MongoDB verbunden"))
-.catch((err) => {
-  console.error("❌ MongoDB Fehler:", err.message);
-  process.exit(1);
+// ================= SERVER =================
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: { origin: "*" },
 });
 
-// =======================
-// 📦 Beispiel Schema
-// =======================
-const auftragSchema = new mongoose.Schema({
-  fahrer: String,
-  text: String,
+// ================= PORT =================
+const PORT = process.env.PORT || 3001;
+
+// ================= DATABASE =================
+mongoose
+  .connect(process.env.MONGO_URI)
+  .then(() => console.log("✅ MongoDB verbunden"))
+  .catch((err) => console.error("❌ MongoDB Fehler:", err));
+
+// ================= ROOT =================
+app.get("/", (req, res) => {
+  res.json({
+    status: "ok",
+    service: "Reklamation Backend läuft",
+  });
+});
+
+// ================= SCHEMA =================
+const AuftragSchema = new mongoose.Schema({
+  nummer: String,
+  strasse: String,
+  plzOrt: String,
   material: String,
+  fahrer: String,
+  status: String,
+  zeit: String,
+  zeitErledigt: String,
   gps: {
     lat: Number,
     lng: Number,
   },
-  erstelltAm: {
-    type: Date,
-    default: Date.now,
-  },
 });
 
-const Auftrag = mongoose.model("Auftrag", auftragSchema);
+const Auftrag = mongoose.model("Auftrag", AuftragSchema);
 
-// =======================
-// 📡 API Routen
-// =======================
+// ================= SOCKET =================
+io.on("connection", async (socket) => {
+  console.log("🔌 Client verbunden");
 
-// Alle Aufträge holen
+  const daten = await Auftrag.find();
+  socket.emit("auftraege", daten);
+});
+
+const updateClients = async () => {
+  const daten = await Auftrag.find();
+  io.emit("auftraege", daten);
+};
+
+// ================= LOGIN =================
+const fahrerListe = ["Max", "Tom", "Ali", "Dispo"];
+
+app.post("/login", (req, res) => {
+  let { name } = req.body;
+  if (!name) return res.status(400).json({ success: false });
+
+  name = name.trim();
+
+  const gefunden = fahrerListe.find(
+    (f) => f.toLowerCase() === name.toLowerCase()
+  );
+
+  if (gefunden) return res.json({ success: true, name: gefunden });
+
+  res.status(401).json({ success: false });
+});
+
+// ================= ROUTEN =================
+
+// Alle Aufträge
 app.get("/auftraege", async (req, res) => {
   try {
-    const daten = await Auftrag.find().sort({ erstelltAm: -1 });
+    const daten = await Auftrag.find();
     res.json(daten);
   } catch (err) {
     res.status(500).json({ error: "Fehler beim Laden" });
   }
 });
 
-// Auftrag speichern (inkl. GPS)
+// Auftrag erstellen
 app.post("/auftraege", async (req, res) => {
   try {
-    const neuerAuftrag = new Auftrag(req.body);
+    const neuerAuftrag = new Auftrag({
+      ...req.body,
+      status: "offen",
+      zeit: new Date().toLocaleString(),
+    });
+
     await neuerAuftrag.save();
+    await updateClients();
+
     res.json(neuerAuftrag);
   } catch (err) {
     res.status(500).json({ error: "Fehler beim Speichern" });
   }
 });
 
-// =======================
-// 🚀 Server starten
-// =======================
-app.listen(PORT, () => {
+// Status + GPS
+app.put("/auftraege/:id", async (req, res) => {
+  try {
+    const { lat, lng } = req.body;
+
+    const auftrag = await Auftrag.findById(req.params.id);
+    if (!auftrag) return res.sendStatus(404);
+
+    // Status wechseln
+    auftrag.status =
+      auftrag.status === "offen" ? "erledigt" : "offen";
+
+    // GPS speichern
+    if (lat !== undefined && lng !== undefined) {
+      auftrag.gps = { lat, lng };
+    }
+
+    // Zeitpunkt speichern
+    auftrag.zeitErledigt = new Date().toLocaleString();
+
+    await auftrag.save();
+    await updateClients();
+
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: "Fehler beim Update" });
+  }
+});
+
+// Löschen
+app.delete("/auftraege/:id", async (req, res) => {
+  try {
+    await Auftrag.findByIdAndDelete(req.params.id);
+    await updateClients();
+
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: "Fehler beim Löschen" });
+  }
+});
+
+// ================= START =================
+server.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Server läuft auf Port ${PORT}`);
 });
