@@ -142,7 +142,7 @@ app.put("/auftraege/:id", async (req, res) => {
 
     // 👉 NUR wenn erledigt → Zeit speichern
     if (wirdErledigt) {
-      auftrag.zeitErledigt = new Date().toLocaleString("de-DE");
+      auftrag.zeitErledigt = new Date();
     }
 
     await auftrag.save();
