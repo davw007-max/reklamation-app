@@ -172,9 +172,9 @@ app.put("/auftraege/:id", async (req, res) => {
         { width: 150 }
       );
 
-      doc.moveTo(40, 100).lineTo(550, 100).stroke();
+      doc.moveTo(40, 85).lineTo(550, 85).stroke();
 
-      let y = 100;
+      let y = 110;
 
       doc.fontSize(12).font("Helvetica-Bold").text("Auftragsdaten:", 40, y);
       y += 20;
