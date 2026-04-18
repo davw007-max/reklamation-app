@@ -4,6 +4,9 @@ const http = require("http");
 const { Server } = require("socket.io");
 const mongoose = require("mongoose");
 
+// ================= CONFIG =================
+const PORT = process.env.PORT || 3001;
+
 // ================= APP =================
 const app = express();
 app.use(cors());
@@ -11,12 +14,13 @@ app.use(express.json());
 
 // ================= SERVER =================
 const server = http.createServer(app);
-const io = new Server(server, {
-  cors: { origin: "*" },
-});
 
-// ================= PORT =================
-const PORT = process.env.PORT || 3001;
+const io = new Server(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+  },
+});
 
 // ================= DATABASE =================
 mongoose
@@ -28,7 +32,7 @@ mongoose
 app.get("/", (req, res) => {
   res.json({
     status: "ok",
-    service: "Reklamation Backend läuft",
+    message: "Reklamation Backend läuft",
   });
 });
 
@@ -54,13 +58,21 @@ const Auftrag = mongoose.model("Auftrag", AuftragSchema);
 io.on("connection", async (socket) => {
   console.log("🔌 Client verbunden");
 
-  const daten = await Auftrag.find();
-  socket.emit("auftraege", daten);
+  try {
+    const daten = await Auftrag.find();
+    socket.emit("auftraege", daten);
+  } catch (err) {
+    console.error("Socket Fehler:", err);
+  }
 });
 
 const updateClients = async () => {
-  const daten = await Auftrag.find();
-  io.emit("auftraege", daten);
+  try {
+    const daten = await Auftrag.find();
+    io.emit("auftraege", daten);
+  } catch (err) {
+    console.error("Update Fehler:", err);
+  }
 };
 
 // ================= LOGIN =================
@@ -128,7 +140,7 @@ app.put("/auftraege/:id", async (req, res) => {
       auftrag.gps = { lat, lng };
     }
 
-    // Zeitpunkt speichern
+    // Zeit speichern
     auftrag.zeitErledigt = new Date().toLocaleString();
 
     await auftrag.save();
