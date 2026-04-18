@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { io } from "socket.io-client";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
 const API = "https://reklamation-backend.onrender.com";
 
@@ -21,11 +23,7 @@ function App() {
   // 🔌 Socket
   useEffect(() => {
     const socket = io(API);
-
-    socket.on("auftraege", (data) => {
-      setAuftraege(data);
-    });
-
+    socket.on("auftraege", setAuftraege);
     return () => socket.disconnect();
   }, []);
 
@@ -33,8 +31,7 @@ function App() {
   useEffect(() => {
     fetch(API + "/auftraege")
       .then((res) => res.json())
-      .then(setAuftraege)
-      .catch(() => alert("Server nicht erreichbar"));
+      .then(setAuftraege);
   }, []);
 
   // 🔐 Login
@@ -51,8 +48,6 @@ function App() {
       const data = await res.json();
       localStorage.setItem("fahrer", data.name);
       setUser(data.name);
-    } else {
-      alert("Login fehlgeschlagen");
     }
   };
 
@@ -61,17 +56,17 @@ function App() {
     setUser("");
   };
 
-  // 🧾 Formular
+  // 🧾 Auftrag erstellen
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
   const addAuftrag = async () => {
-    if (!form.fahrer) return alert("Fahrer auswählen!");
-
     await fetch(API + "/auftraege", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify(form),
     });
 
@@ -91,11 +86,6 @@ function App() {
 
   // ✔ Status + GPS
   const toggleStatus = (id) => {
-    if (!navigator.geolocation) {
-      alert("GPS nicht verfügbar");
-      return;
-    }
-
     navigator.geolocation.getCurrentPosition(async (pos) => {
       await fetch(`${API}/auftraege/${id}`, {
         method: "PUT",
@@ -108,138 +98,120 @@ function App() {
     });
   };
 
+  // 📄 PDF EXPORT
+  const exportPDF = async () => {
+    const element = document.getElementById("pdf-content");
+    const canvas = await html2canvas(element);
+    const imgData = canvas.toDataURL("image/png");
+
+    const pdf = new jsPDF();
+    pdf.addImage(imgData, "PNG", 0, 0, 210, 297);
+    pdf.save("auftraege.pdf");
+  };
+
   const meineAuftraege = auftraege.filter(
     (a) => a.fahrer === user && a.status === "offen"
   );
 
-  const cardStyle = {
-    background: "#f4f4f4",
-    padding: 15,
-    marginBottom: 15,
-    borderRadius: 10,
-  };
-
-  const buttonStyle = {
-    width: "100%",
-    padding: 10,
-    marginTop: 5,
-    borderRadius: 8,
-    border: "none",
-  };
-
   return (
-    <div style={{ padding: 15, fontFamily: "Arial" }}>
-      <h1 style={{ textAlign: "center" }}>🚛 Fahrer App</h1>
+    <div style={{ padding: 15 }}>
+      <h1>🚛 Fahrer App</h1>
 
-      {/* LOGIN */}
       {!user && (
-        <div style={{ textAlign: "center" }}>
-          <h2>Fahrer wählen</h2>
-
-          <select
-            value={loginName}
-            onChange={(e) => setLoginName(e.target.value)}
-            style={{ fontSize: 18, padding: 10, width: "80%" }}
-          >
-            <option value="">Bitte wählen</option>
-            <option value="Max">Max</option>
-            <option value="Tom">Tom</option>
-            <option value="Ali">Ali</option>
-            <option value="Dispo">Disponent</option>
+        <>
+          <select onChange={(e) => setLoginName(e.target.value)}>
+            <option value="">Fahrer wählen</option>
+            <option>Max</option>
+            <option>Tom</option>
+            <option>Ali</option>
+            <option>Dispo</option>
           </select>
-
-          <br /><br />
-
-          <button onClick={login} style={{ ...buttonStyle, background: "#007bff", color: "white" }}>
-            Start
-          </button>
-        </div>
+          <button onClick={login}>Start</button>
+        </>
       )}
 
       {/* DISPO */}
-      {user && isDisponent && (
+      {user === "Dispo" && (
         <>
-          <h2>👨‍💼 Disponent</h2>
           <button onClick={logout}>Logout</button>
 
           <h3>Neuer Auftrag</h3>
-
           <input name="nummer" placeholder="Nummer" onChange={handleChange} />
           <input name="strasse" placeholder="Straße" onChange={handleChange} />
-          <input name="plzOrt" placeholder="PLZ Ort" onChange={handleChange} />
+          <input name="plzOrt" placeholder="Ort" onChange={handleChange} />
           <input name="material" placeholder="Material" onChange={handleChange} />
 
           <select name="fahrer" onChange={handleChange}>
             <option value="">Fahrer wählen</option>
-            <option value="Max">Max</option>
-            <option value="Tom">Tom</option>
-            <option value="Ali">Ali</option>
+            <option>Max</option>
+            <option>Tom</option>
+            <option>Ali</option>
           </select>
 
-          <button style={{ ...buttonStyle, background: "green", color: "white" }} onClick={addAuftrag}>
-            ➕ Auftrag erstellen
-          </button>
+          <button onClick={addAuftrag}>➕ Auftrag</button>
+
+          <br /><br />
+
+          {/* 👉 PDF BUTTON EINMAL */}
+          <button onClick={exportPDF}>📄 PDF exportieren</button>
 
           <hr />
 
-          {auftraege.map((a) => (
-            <div key={a._id} style={cardStyle}>
-              <b>{a.nummer}</b><br />
-              {a.fahrer}<br />
-              <span style={{ color: a.status === "erledigt" ? "green" : "red" }}>
-                {a.status}
-              </span>
+          {/* 👉 PDF CONTENT EINMAL */}
+          <div id="pdf-content">
+            {auftraege.map((a) => (
+              <div key={a._id} style={{ border: "1px solid #ccc", marginBottom: 10, padding: 10 }}>
+                <b>{a.nummer}</b><br />
+                {a.strasse}<br />
+                {a.plzOrt}<br />
+                {a.material}<br />
+                Status: {a.status}<br />
 
-              {a.gps && a.gps.lat && (
-                <button
-                  style={{ ...buttonStyle, background: "#007bff", color: "white" }}
-                  onClick={() =>
-                    window.open(`https://www.google.com/maps?q=${a.gps.lat},${a.gps.lng}`)
-                  }
-                >
-                  📍 Standort anzeigen
-                </button>
-              )}
+                {a.gps && (
+                  <div>
+                    📍 {a.gps.lat}, {a.gps.lng}
+                  </div>
+                )}
 
-              <button
-                style={{ ...buttonStyle, background: "red", color: "white" }}
-                onClick={() => deleteAuftrag(a._id)}
-              >
-                🗑 Löschen
-              </button>
-            </div>
-          ))}
+                {a.gps && (
+                  <button
+                    onClick={() =>
+                      window.open(`https://www.google.com/maps?q=${a.gps.lat},${a.gps.lng}`)
+                    }
+                  >
+                    Standort anzeigen
+                  </button>
+                )}
+
+                <br />
+                <button onClick={() => deleteAuftrag(a._id)}>🗑 Löschen</button>
+              </div>
+            ))}
+          </div>
         </>
       )}
 
       {/* FAHRER */}
-      {user && !isDisponent && (
+      {user && user !== "Dispo" && (
         <>
-          <h2>{user}</h2>
           <button onClick={logout}>Logout</button>
 
           {meineAuftraege.map((a) => (
-            <div key={a._id} style={cardStyle}>
+            <div key={a._id}>
               <b>{a.nummer}</b><br />
               {a.strasse}<br />
               {a.plzOrt}<br />
 
               <button
-                style={{ ...buttonStyle, background: "#007bff", color: "white" }}
                 onClick={() => {
                   const query = encodeURIComponent(a.strasse + " " + a.plzOrt);
-                  window.open(
-                    "https://www.google.com/maps/search/?api=1&query=" + query
-                  );
+                  window.open(`https://www.google.com/maps/search/?api=1&query=${query}`);
                 }}
               >
-                🗺 Navigation
+                Navigation
               </button>
 
-              <button
-                style={{ ...buttonStyle, background: "green", color: "white" }}
-                onClick={() => toggleStatus(a._id)}
-              >
+              <button onClick={() => toggleStatus(a._id)}>
                 ✔ Erledigt
               </button>
             </div>
