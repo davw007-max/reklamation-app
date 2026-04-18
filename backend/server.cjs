@@ -156,14 +156,9 @@ app.put("/auftraege/:id", async (req, res) => {
 
 // Löschen
 app.delete("/auftraege/:id", async (req, res) => {
-  try {
-    await Auftrag.findByIdAndDelete(req.params.id);
-    await updateClients();
-
-    res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ error: "Fehler beim Löschen" });
-  }
+  await Auftrag.findByIdAndDelete(req.params.id);
+  await updateClients();
+  res.json({ success: true });
 });
 
 // ================= START =================

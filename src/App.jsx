@@ -78,7 +78,15 @@ function App() {
 
     loadData();
   };
+  const deleteAuftrag = async (id) => {
+    if (!window.confirm("Auftrag wirklich löschen?")) return;
 
+   await fetch(`${API}/auftraege/${id}`, {
+    method: "DELETE",
+    });
+
+   loadData();
+  };
   // ✔ Status + GPS
   const toggleStatus = (id) => {
     if (!navigator.geolocation) {
@@ -214,11 +222,37 @@ function App() {
           <hr />
 
           {auftraege.map((a) => (
-            <div key={a._id}>
-              {a.nummer} - {a.status}
-              <button onClick={() => createPDF(a)}>PDF</button>
-            </div>
-          ))}
+  <div
+    key={a._id}
+    style={{
+      border: "1px solid #ccc",
+      padding: 10,
+      marginBottom: 10,
+      borderRadius: 8,
+    }}
+  >
+    <b>{a.nummer}</b> - {a.status}
+    <br />
+
+    <button onClick={() => createPDF(a)}>
+      📄 PDF
+    </button>
+
+    <button
+      onClick={() => deleteAuftrag(a._id)}
+      style={{
+        marginLeft: 10,
+        background: "red",
+        color: "white",
+        border: "none",
+        padding: "5px 10px",
+        borderRadius: 5,
+      }}
+    >
+      🗑 Löschen
+    </button>
+  </div>
+))}
         </>
       )}
 
