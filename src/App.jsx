@@ -3,6 +3,13 @@ import jsPDF from "jspdf";
 
 const API = "https://reklamation-backend.onrender.com";
 
+const materialListe = [
+  "kom. Restmüll",
+  "Kartonage",
+  "LVP",
+  "Abrufleerung kom Restmüll",
+];
+
 function App() {
   const [auftraege, setAuftraege] = useState([]);
   const [user, setUser] = useState(localStorage.getItem("fahrer") || "");
@@ -36,9 +43,7 @@ function App() {
 
     const res = await fetch(API + "/login", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name: loginName }),
     });
 
@@ -59,6 +64,7 @@ function App() {
   // ➕ Auftrag
   const addAuftrag = async () => {
     if (!form.fahrer) return alert("Fahrer wählen!");
+    if (!form.material) return alert("Material wählen!");
 
     await fetch(API + "/auftraege", {
       method: "POST",
@@ -78,15 +84,18 @@ function App() {
 
     loadData();
   };
+
+  // 🗑 Löschen
   const deleteAuftrag = async (id) => {
     if (!window.confirm("Auftrag wirklich löschen?")) return;
 
-   await fetch(`${API}/auftraege/${id}`, {
-    method: "DELETE",
+    await fetch(`${API}/auftraege/${id}`, {
+      method: "DELETE",
     });
 
-   loadData();
+    loadData();
   };
+
   // ✔ Status + GPS
   const toggleStatus = (id) => {
     if (!navigator.geolocation) {
@@ -160,16 +169,13 @@ function App() {
 
       pdf.text(`Status: ${a.status}`, 10, y); y += 8;
 
-      // 🕒 Erledigt Zeit
       pdf.text(`Erledigt: ${formatDate(a.zeitErledigt)}`, 10, y); y += 8;
 
-      // 📍 GPS
       if (a.gps?.lat && a.gps?.lng) {
         pdf.text(`GPS: ${a.gps.lat}, ${a.gps.lng}`, 10, y);
       }
 
       pdf.save(`${year}_KW${kw}_${a.nummer}.pdf`);
-
     } catch (err) {
       console.error("PDF Fehler:", err);
       alert("PDF konnte nicht erstellt werden");
@@ -205,12 +211,43 @@ function App() {
 
           <h3>Neuer Auftrag</h3>
 
-          <input placeholder="Nr" value={form.nummer} onChange={(e) => setForm({...form, nummer: e.target.value})} />
-          <input placeholder="Straße" value={form.strasse} onChange={(e) => setForm({...form, strasse: e.target.value})} />
-          <input placeholder="Ort" value={form.plzOrt} onChange={(e) => setForm({...form, plzOrt: e.target.value})} />
-          <input placeholder="Material" value={form.material} onChange={(e) => setForm({...form, material: e.target.value})} />
+          <input
+            placeholder="Nr"
+            value={form.nummer}
+            onChange={(e) => setForm({ ...form, nummer: e.target.value })}
+          />
+          <input
+            placeholder="Straße"
+            value={form.strasse}
+            onChange={(e) => setForm({ ...form, strasse: e.target.value })}
+          />
+          <input
+            placeholder="Ort"
+            value={form.plzOrt}
+            onChange={(e) => setForm({ ...form, plzOrt: e.target.value })}
+          />
 
-          <select value={form.fahrer} onChange={(e) => setForm({...form, fahrer: e.target.value})}>
+          {/* ✅ MATERIAL DROPDOWN */}
+          <select
+            value={form.material}
+            onChange={(e) =>
+              setForm({ ...form, material: e.target.value })
+            }
+          >
+            <option value="">Material wählen</option>
+            {materialListe.map((m, i) => (
+              <option key={i} value={m}>
+                {m}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={form.fahrer}
+            onChange={(e) =>
+              setForm({ ...form, fahrer: e.target.value })
+            }
+          >
             <option value="">Fahrer</option>
             <option>Max</option>
             <option>Tom</option>
@@ -222,37 +259,35 @@ function App() {
           <hr />
 
           {auftraege.map((a) => (
-  <div
-    key={a._id}
-    style={{
-      border: "1px solid #ccc",
-      padding: 10,
-      marginBottom: 10,
-      borderRadius: 8,
-    }}
-  >
-    <b>{a.nummer}</b> - {a.status}
-    <br />
+            <div
+              key={a._id}
+              style={{
+                border: "1px solid #ccc",
+                padding: 10,
+                marginBottom: 10,
+                borderRadius: 8,
+              }}
+            >
+              <b>{a.nummer}</b> - {a.status}
+              <br />
 
-    <button onClick={() => createPDF(a)}>
-      📄 PDF
-    </button>
+              <button onClick={() => createPDF(a)}>📄 PDF</button>
 
-    <button
-      onClick={() => deleteAuftrag(a._id)}
-      style={{
-        marginLeft: 10,
-        background: "red",
-        color: "white",
-        border: "none",
-        padding: "5px 10px",
-        borderRadius: 5,
-      }}
-    >
-      🗑 Löschen
-    </button>
-  </div>
-))}
+              <button
+                onClick={() => deleteAuftrag(a._id)}
+                style={{
+                  marginLeft: 10,
+                  background: "red",
+                  color: "white",
+                  border: "none",
+                  padding: "5px 10px",
+                  borderRadius: 5,
+                }}
+              >
+                🗑 Löschen
+              </button>
+            </div>
+          ))}
         </>
       )}
 
