@@ -7,11 +7,10 @@ const API = "https://reklamation-backend.onrender.com";
 function App() {
   const [auftraege, setAuftraege] = useState([]);
 
-  useEffect(() => {
-    const socket = io(API);
-    socket.on("auftraege", setAuftraege);
-    return () => socket.disconnect();
-  }, []);
+  const socket = io(API, {
+  transports: ["websocket"],
+  withCredentials: true,
+});
 
   // 📄 PDF pro Auftrag
   const createPDF = (a) => {
