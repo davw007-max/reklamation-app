@@ -132,16 +132,18 @@ app.put("/auftraege/:id", async (req, res) => {
     if (!auftrag) return res.sendStatus(404);
 
     // Status wechseln
-    auftrag.status =
-      auftrag.status === "offen" ? "erledigt" : "offen";
+    const wirdErledigt = auftrag.status === "offen";
+    auftrag.status = wirdErledigt ? "erledigt" : "offen";
 
     // GPS speichern
     if (lat !== undefined && lng !== undefined) {
       auftrag.gps = { lat, lng };
     }
 
-    // Zeit speichern
-    auftrag.zeitErledigt = new Date().toLocaleString();
+    // 👉 NUR wenn erledigt → Zeit speichern
+    if (wirdErledigt) {
+      auftrag.zeitErledigt = new Date().toLocaleString();
+    }
 
     await auftrag.save();
     await updateClients();
