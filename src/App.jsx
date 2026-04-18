@@ -248,78 +248,146 @@ function App() {
         </>
       )}
 
-      {user && !isDispo && (
-        <>
-          <button
-            onClick={logout}
-            style={{ width: "100%", padding: 15, fontSize: 18 }}
+      {user && isDispo && (
+  <>
+    <button onClick={logout} style={{
+      width: "100%",
+      padding: 12,
+      marginBottom: 20,
+      fontSize: 16
+    }}>
+      🚪 Logout
+    </button>
+
+    <h2>📋 Disposition</h2>
+
+    {/* ================= NEUER AUFTRAG ================= */}
+    <div style={{
+      border: "2px solid #ccc",
+      padding: 15,
+      borderRadius: 10,
+      marginBottom: 20,
+      background: "#f9f9f9"
+    }}>
+      <h3>➕ Neuer Auftrag</h3>
+
+      <input placeholder="Nr"
+        value={form.nummer}
+        onChange={(e) => setForm({ ...form, nummer: e.target.value })}
+        style={{ width: "100%", marginBottom: 8 }}
+      />
+
+      <input placeholder="Straße"
+        value={form.strasse}
+        onChange={(e) => setForm({ ...form, strasse: e.target.value })}
+        style={{ width: "100%", marginBottom: 8 }}
+      />
+
+      <input placeholder="Ort"
+        value={form.plzOrt}
+        onChange={(e) => setForm({ ...form, plzOrt: e.target.value })}
+        style={{ width: "100%", marginBottom: 8 }}
+      />
+
+      <select value={form.material}
+        onChange={(e) => setForm({ ...form, material: e.target.value })}
+        style={{ width: "100%", marginBottom: 8 }}>
+        <option value="">Material wählen</option>
+        {materialListe.map((m, i) => (
+          <option key={i} value={m}>{m}</option>
+        ))}
+      </select>
+
+      <select value={form.fahrer}
+        onChange={(e) => setForm({ ...form, fahrer: e.target.value })}
+        style={{ width: "100%", marginBottom: 10 }}>
+        <option value="">Fahrer</option>
+        <option>Max</option>
+        <option>Tom</option>
+        <option>Ali</option>
+      </select>
+
+      <button onClick={addAuftrag} style={{
+        width: "100%",
+        padding: 12,
+        fontSize: 16
+      }}>
+        ➕ Auftrag erstellen
+      </button>
+    </div>
+
+    {/* ================= AUFTRÄGE ================= */}
+    <h3>🚛 Aufträge</h3>
+
+    {auftraege.map((a) => (
+      <div key={a._id} style={{
+        border: "2px solid #ddd",
+        borderRadius: 12,
+        padding: 15,
+        marginBottom: 15,
+        background: "#fff",
+        boxShadow: "0 2px 6px rgba(0,0,0,0.1)"
+      }}>
+        <div style={{ fontSize: 18, fontWeight: "bold" }}>
+          #{a.nummer}
+        </div>
+
+        <div>👤 Fahrer: <b>{a.fahrer}</b></div>
+        <div>📦 Material: {a.material}</div>
+
+        <div style={{ marginTop: 5 }}>
+          📍 {a.strasse}<br />
+          {a.plzOrt}
+        </div>
+
+        <div style={{
+          marginTop: 8,
+          fontWeight: "bold",
+          color: a.status === "erledigt" ? "green" : "red"
+        }}>
+          {a.status.toUpperCase()}
+        </div>
+
+        {a.gps?.lat && (
+          <a
+            href={`https://www.google.com/maps?q=${a.gps.lat},${a.gps.lng}`}
+            target="_blank"
+            rel="noreferrer"
+            style={{ display: "block", marginTop: 8 }}
           >
-            🚪 Logout
+            📍 Standort öffnen
+          </a>
+        )}
+
+        {/* BUTTONS */}
+        <div style={{
+          display: "flex",
+          gap: 10,
+          marginTop: 10
+        }}>
+          <button
+            onClick={() => createPDF(a)}
+            style={{ flex: 1, padding: 10 }}
+          >
+            📄 PDF
           </button>
 
-          {meine.map((a) => (
-            <div
-              key={a._id}
-              style={{
-                marginBottom: 25,
-                padding: 15,
-                borderRadius: 10,
-                background: "#f4f4f4",
-              }}
-            >
-              <div style={{ fontSize: 20, fontWeight: "bold" }}>
-                {a.nummer}
-              </div>
-
-              <div>📍 {a.strasse}</div>
-              <div>{a.plzOrt}</div>
-
-              <div style={{ fontWeight: "bold", marginTop: 5 }}>
-                ♻️ {a.material}
-              </div>
-
-              <button
-                onClick={() => {
-                  const query = encodeURIComponent(
-                    a.strasse + " " + a.plzOrt
-                  );
-                  window.open(
-                    "https://www.google.com/maps/search/?api=1&query=" + query
-                  );
-                }}
-                style={{
-                  width: "100%",
-                  padding: 15,
-                  fontSize: 18,
-                  marginTop: 10,
-                  background: "#007bff",
-                  color: "white",
-                  border: "none",
-                  borderRadius: 8,
-                }}
-              >
-                🗺 Navigation starten
-              </button>
-
-              <button
-                onClick={() => toggleStatus(a._id)}
-                style={{
-                  width: "100%",
-                  padding: 18,
-                  fontSize: 20,
-                  marginTop: 10,
-                  background: "green",
-                  color: "white",
-                  border: "none",
-                  borderRadius: 10,
-                }}
-              >
-                ✔ Auftrag erledigt
-              </button>
-            </div>
-          ))}
-        </>
-      )}
+          <button
+            onClick={() => deleteAuftrag(a._id)}
+            style={{
+              flex: 1,
+              padding: 10,
+              background: "#ff4d4d",
+              color: "white"
+            }}
+          >
+            🗑 Löschen
+          </button>
+        </div>
+      </div>
+    ))}
+  </>
+)}
     </div>
   );
 }
