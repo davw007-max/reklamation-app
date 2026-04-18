@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import jsPDF from "jspdf";
-import SignatureCanvas from "react-signature-canvas";
+import * as SignatureCanvas from "react-signature-canvas";
 
 const API = "https://reklamation-backend.onrender.com";
 
@@ -16,7 +16,7 @@ function App() {
   const [user, setUser] = useState(localStorage.getItem("fahrer") || "");
   const [loginName, setLoginName] = useState("");
 
-  const sigRef = useRef(); // ✅ fehlte
+  const sigRef = useRef();
 
   const [form, setForm] = useState({
     nummer: "",
@@ -28,7 +28,6 @@ function App() {
 
   const isDispo = user === "Dispo";
 
-  // 📦 Laden
   useEffect(() => {
     loadData();
   }, []);
@@ -69,9 +68,7 @@ function App() {
 
     await fetch(API + "/auftraege", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form),
     });
 
@@ -97,122 +94,106 @@ function App() {
     loadData();
   };
 
-  // ✔ Status + GPS + ✍️ Unterschrift
+  // ✔ Status + GPS + Unterschrift
   const toggleStatus = async (id) => {
-  try {
-    let signature = null;
+    try {
+      let signature = null;
 
-    // ✅ SAFE CHECK (wichtig!)
-    if (
-      sigRef.current &&
-      typeof sigRef.current.getTrimmedCanvas === "function" &&
-      !sigRef.current.isEmpty()
-    ) {
-      signature = sigRef.current
-        .getTrimmedCanvas()
-        .toDataURL("image/png");
-    }
+      if (
+        sigRef.current &&
+        typeof sigRef.current.getTrimmedCanvas === "function" &&
+        !sigRef.current.isEmpty()
+      ) {
+        signature = sigRef.current
+          .getTrimmedCanvas()
+          .toDataURL("image/png");
+      }
 
-    const getPosition = () =>
-      new Promise((resolve) => {
-        if (!navigator.geolocation) return resolve(null);
+      const getPosition = () =>
+        new Promise((resolve) => {
+          if (!navigator.geolocation) return resolve(null);
 
-        navigator.geolocation.getCurrentPosition(
-          (pos) => resolve(pos),
-          () => resolve(null),
-          { timeout: 5000 }
-        );
+          navigator.geolocation.getCurrentPosition(
+            (pos) => resolve(pos),
+            () => resolve(null),
+            { timeout: 5000 }
+          );
+        });
+
+      const pos = await getPosition();
+
+      await fetch(`${API}/auftraege/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          lat: pos?.coords?.latitude,
+          lng: pos?.coords?.longitude,
+          unterschrift: signature,
+        }),
       });
 
-    const pos = await getPosition();
+      if (sigRef.current) sigRef.current.clear();
 
-    const payload = {
-      lat: pos?.coords?.latitude,
-      lng: pos?.coords?.longitude,
-      unterschrift: signature,
-    };
-
-    console.log("SEND:", payload);
-
-    await fetch(`${API}/auftraege/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-
-    if (sigRef.current) sigRef.current.clear();
-
-    loadData();
-  } catch (err) {
-    console.error("Fehler beim Erledigen:", err);
-    alert("Fehler beim Erledigen");
-  }
-};
-
-  // 📅 Datum
-  const formatDate = (d) => {
-    if (!d) return "-";
-    return new Date(d).toLocaleString("de-DE");
+      loadData();
+    } catch (err) {
+      console.error("Fehler beim Erledigen:", err);
+      alert("Fehler beim Erledigen");
+    }
   };
 
-  // 📅 KW
+  // 📄 PDF
+  const createPDF = (a) => {
+    const pdf = new jsPDF();
+    const baseDate = a.zeitErledigt ? new Date(a.zeitErledigt) : new Date();
+
+    const year = baseDate.getFullYear();
+    const kw = getKW(baseDate);
+
+    const tag = String(baseDate.getDate()).padStart(2, "0");
+    const monat = String(baseDate.getMonth() + 1).padStart(2, "0");
+    const datum = `${tag}-${monat}-${year}`;
+
+    let y = 20;
+
+    pdf.setFontSize(18);
+    pdf.text("AUFTRAGSBERICHT", 10, y);
+
+    y += 10;
+
+    pdf.setFontSize(11);
+    pdf.text(`Nr: ${a.nummer}`, 10, y); y += 6;
+    pdf.text(`Fahrer: ${a.fahrer}`, 10, y); y += 6;
+    pdf.text(`Material: ${a.material}`, 10, y); y += 10;
+
+    pdf.text(`Adresse: ${a.strasse}`, 10, y); y += 6;
+    pdf.text(`${a.plzOrt}`, 10, y); y += 10;
+
+    pdf.text(`Status: ${a.status}`, 10, y); y += 6;
+
+    if (a.zeitErledigt) {
+      pdf.text(`Erledigt: ${new Date(a.zeitErledigt).toLocaleString("de-DE")}`, 10, y);
+      y += 10;
+    }
+
+    if (a.gps?.lat) {
+      pdf.text(`GPS: ${a.gps.lat}, ${a.gps.lng}`, 10, y);
+      y += 10;
+    }
+
+    if (a.unterschrift) {
+      pdf.text("Unterschrift:", 10, y);
+      y += 5;
+      pdf.addImage(a.unterschrift, "PNG", 10, y, 80, 40);
+    }
+
+    pdf.save(`${year}_KW${kw}_${datum}_${a.nummer}.pdf`);
+  };
+
   const getKW = (date) => {
     const d = new Date(date);
     d.setDate(d.getDate() + 4 - (d.getDay() || 7));
     const yearStart = new Date(d.getFullYear(), 0, 1);
     return Math.ceil(((d - yearStart) / 86400000 + 1) / 7);
-  };
-
-  // 📄 PDF
-  const createPDF = (a) => {
-    try {
-      const pdf = new jsPDF();
-
-      const baseDate = a.zeitErledigt
-        ? new Date(a.zeitErledigt)
-        : new Date();
-
-      const year = baseDate.getFullYear();
-      const kw = getKW(baseDate);
-
-      const tag = String(baseDate.getDate()).padStart(2, "0");
-      const monat = String(baseDate.getMonth() + 1).padStart(2, "0");
-      const datum = `${tag}-${monat}-${year}`;
-
-      let y = 20;
-
-      pdf.setFontSize(18);
-      pdf.text("AUFTRAGSBERICHT", 10, y);
-
-      y += 10;
-
-      pdf.setFontSize(11);
-      pdf.text(`Nr: ${a.nummer}`, 10, y); y += 6;
-      pdf.text(`Fahrer: ${a.fahrer}`, 10, y); y += 6;
-      pdf.text(`Material: ${a.material}`, 10, y); y += 10;
-
-      pdf.text(`Adresse: ${a.strasse}`, 10, y); y += 6;
-      pdf.text(`${a.plzOrt}`, 10, y); y += 10;
-
-      pdf.text(`Status: ${a.status}`, 10, y); y += 6;
-      pdf.text(`Erledigt: ${formatDate(a.zeitErledigt)}`, 10, y); y += 10;
-
-      if (a.gps?.lat) {
-        pdf.text(`GPS: ${a.gps.lat}, ${a.gps.lng}`, 10, y);
-        y += 10;
-      }
-
-      if (a.unterschrift) {
-        pdf.text("Unterschrift:", 10, y);
-        y += 5;
-        pdf.addImage(a.unterschrift, "PNG", 10, y, 80, 40);
-      }
-
-      pdf.save(`${year}_KW${kw}_${datum}_${a.nummer}.pdf`);
-    } catch (err) {
-      console.error(err);
-      alert("PDF Fehler");
-    }
   };
 
   const meine = auftraege.filter(
@@ -257,7 +238,7 @@ function App() {
             onChange={(e) => setForm({ ...form, material: e.target.value })}>
             <option value="">Material wählen</option>
             {materialListe.map((m, i) => (
-              <option key={i}>{m}</option>
+              <option key={i} value={m}>{m}</option>
             ))}
           </select>
 
@@ -288,17 +269,23 @@ function App() {
         <>
           <button onClick={logout}>Logout</button>
 
-          {meine.map((a, index) => (
-  <div key={a._id}>
-    <SignatureCanvas
-      ref={index === 0 ? sigRef : null}  // 👈 nur EIN Canvas nutzt ref
-      penColor="black"
-      canvasProps={{
-        width: 300,
-        height: 150,
-        style: { border: "1px solid black" },
-      }}
-    />
+          {meine.map((a) => (
+            <div key={a._id} style={{ marginBottom: 20 }}>
+              {/* ✅ HIER war dein Problem → Anzeige ergänzt */}
+              <b>{a.nummer}</b><br />
+              {a.strasse}<br />
+              {a.plzOrt}<br />
+              <b>{a.material}</b><br /><br />
+
+              <SignatureCanvas.default
+                ref={sigRef}
+                penColor="black"
+                canvasProps={{
+                  width: 300,
+                  height: 150,
+                  style: { border: "1px solid black" },
+                }}
+              />
 
               <button onClick={() => sigRef.current.clear()}>
                 ❌ Löschen
