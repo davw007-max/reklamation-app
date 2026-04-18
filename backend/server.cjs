@@ -3,6 +3,8 @@ const cors = require("cors");
 const http = require("http");
 const { Server } = require("socket.io");
 const mongoose = require("mongoose");
+const { lat, lng, unterschrift } = req.body;
+
 
 // ================= CONFIG =================
 const PORT = process.env.PORT || 3001;
@@ -45,7 +47,8 @@ const AuftragSchema = new mongoose.Schema({
   fahrer: String,
   status: String,
   zeit: String,
-  zeitErledigt: String,
+  zeitErledigt: Date,
+  unterschrift: String, // 👈 NEU
   gps: {
     lat: Number,
     lng: Number,
@@ -94,6 +97,12 @@ app.post("/login", (req, res) => {
 });
 
 // ================= ROUTEN =================
+
+const { lat, lng, unterschrift } = req.body;
+
+if (unterschrift) {
+  auftrag.unterschrift = unterschrift;
+}
 
 // Alle Aufträge
 app.get("/auftraege", async (req, res) => {
