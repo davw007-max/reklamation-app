@@ -203,50 +203,7 @@ function App() {
         </>
       )}
 
-      {user && isDispo && (
-        <>
-          <button onClick={logout}>Logout</button>
 
-          <h3>Neuer Auftrag</h3>
-
-          <input placeholder="Nr" value={form.nummer}
-            onChange={(e) => setForm({ ...form, nummer: e.target.value })} />
-
-          <input placeholder="Straße" value={form.strasse}
-            onChange={(e) => setForm({ ...form, strasse: e.target.value })} />
-
-          <input placeholder="Ort" value={form.plzOrt}
-            onChange={(e) => setForm({ ...form, plzOrt: e.target.value })} />
-
-          <select value={form.material}
-            onChange={(e) => setForm({ ...form, material: e.target.value })}>
-            <option value="">Material wählen</option>
-            {materialListe.map((m, i) => (
-              <option key={i} value={m}>{m}</option>
-            ))}
-          </select>
-
-          <select value={form.fahrer}
-            onChange={(e) => setForm({ ...form, fahrer: e.target.value })}>
-            <option value="">Fahrer</option>
-            <option>Max</option>
-            <option>Tom</option>
-            <option>Ali</option>
-          </select>
-
-          <button onClick={addAuftrag}>➕</button>
-
-          <hr />
-
-          {auftraege.map((a) => (
-            <div key={a._id}>
-              <b>{a.nummer}</b> - {a.status}
-              <button onClick={() => createPDF(a)}>📄 PDF</button>
-              <button onClick={() => deleteAuftrag(a._id)}>🗑</button>
-            </div>
-          ))}
-        </>
-      )}
 
       {user && isDispo && (
   <>
