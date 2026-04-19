@@ -13,15 +13,14 @@ const materialListe = [
 function App() {
   const [auftraege, setAuftraege] = useState([]);
 
-  // ✅ SAUBERES USER OBJECT
+  // ✅ ROBUSTER LOGIN STATE (FIX)
   const [user, setUser] = useState(() => {
-    try {
-      const saved = localStorage.getItem("user");
-      return saved ? JSON.parse(saved) : null;
-    } catch {
-      return null;
-    }
+    const saved = localStorage.getItem("fahrer");
+    if (!saved || saved === "null" || saved === "undefined") return "";
+    return saved;
   });
+
+  const [loginName, setLoginName] = useState("");
 
   const [form, setForm] = useState({
     nummer: "",
@@ -31,7 +30,8 @@ function App() {
     fahrer: "",
   });
 
-  const isDispo = user?.role === "dispo";
+  const isDispo = user === "Dispo";
+  const isFahrer = user && user !== "Dispo";
 
   useEffect(() => {
     loadData();
@@ -41,27 +41,39 @@ function App() {
     fetch(API + "/auftraege")
       .then((res) => res.json())
       .then(setAuftraege)
-      .catch((err) => console.error("Fehler:", err));
+      .catch((err) => console.error("Fehler beim Laden:", err));
   };
 
-  // ✅ LOGIN MIT ROLLE
-  const login = (name) => {
-    if (!name) return;
+  // ✅ STABILER LOGIN
+  const login = async () => {
+    if (!loginName) return alert("Bitte auswählen");
 
-    const role = name === "Dispo" ? "dispo" : "fahrer";
+    try {
+      const res = await fetch(API + "/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: loginName }),
+      });
 
-    const userData = {
-      name,
-      role,
-    };
+      if (!res.ok) throw new Error("Login fehlgeschlagen");
 
-    localStorage.setItem("user", JSON.stringify(userData));
-    setUser(userData);
+      const data = await res.json();
+
+      if (data?.name) {
+        localStorage.setItem("fahrer", data.name);
+        setUser(data.name);
+      } else {
+        alert("Ungültiger Login");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Serverfehler beim Login");
+    }
   };
 
   const logout = () => {
-    localStorage.removeItem("user");
-    setUser(null);
+    localStorage.removeItem("fahrer");
+    setUser("");
   };
 
   const addAuftrag = async () => {
@@ -86,7 +98,7 @@ function App() {
   };
 
   const deleteAuftrag = async (id) => {
-    if (!window.confirm("Wirklich löschen?")) return;
+    if (!window.confirm("Auftrag wirklich löschen?")) return;
 
     await fetch(`${API}/auftraege/${id}`, {
       method: "DELETE",
@@ -96,136 +108,100 @@ function App() {
   };
 
   const toggleStatus = async (id) => {
-    const pos = await new Promise((resolve) => {
-      if (!navigator.geolocation) return resolve(null);
+    try {
+      const getPosition = () =>
+        new Promise((resolve) => {
+          if (!navigator.geolocation) return resolve(null);
 
-      navigator.geolocation.getCurrentPosition(
-        (p) => resolve(p),
-        () => resolve(null),
-        { timeout: 5000 }
-      );
-    });
+          navigator.geolocation.getCurrentPosition(
+            (pos) => resolve(pos),
+            () => resolve(null),
+            { timeout: 5000 }
+          );
+        });
 
-    await fetch(`${API}/auftraege/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        lat: pos?.coords?.latitude,
-        lng: pos?.coords?.longitude,
-      }),
-    });
+      const pos = await getPosition();
 
-    loadData();
+      await fetch(`${API}/auftraege/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          lat: pos?.coords?.latitude,
+          lng: pos?.coords?.longitude,
+        }),
+      });
+
+      loadData();
+    } catch (err) {
+      console.error("Fehler beim Erledigen:", err);
+      alert("Fehler beim Erledigen");
+    }
+  };
+
+  const createPDF = (a) => {
+    const pdf = new jsPDF();
+    const baseDate = a.zeitErledigt ? new Date(a.zeitErledigt) : new Date();
+
+    const year = baseDate.getFullYear();
+    const kw = getKW(baseDate);
+
+    const tag = String(baseDate.getDate()).padStart(2, "0");
+    const monat = String(baseDate.getMonth() + 1).padStart(2, "0");
+    const datum = `${tag}-${monat}-${year}`;
+
+    pdf.setFontSize(18);
+    pdf.text("AUFTRAGSBERICHT", 10, 20);
+
+    pdf.save(`${year}_KW${kw}_${datum}_${a.nummer}.pdf`);
+  };
+
+  const getKW = (date) => {
+    const d = new Date(date);
+    d.setDate(d.getDate() + 4 - (d.getDay() || 7));
+    const yearStart = new Date(d.getFullYear(), 0, 1);
+    return Math.ceil(((d - yearStart) / 86400000 + 1) / 7);
   };
 
   const meine = auftraege.filter(
-    (a) => a.fahrer === user?.name && a.status === "offen"
+    (a) => a.fahrer === user && a.status === "offen"
   );
 
-  // ================= UI =================
   return (
     <div style={{ padding: 20 }}>
       <h1>🚛 App</h1>
 
-      {/* ================= LOGIN ================= */}
+      {/* ✅ LOGIN */}
       {!user && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <h2>Login</h2>
-
-          <button onClick={() => login("Max")}>👷 Max</button>
-          <button onClick={() => login("Tom")}>👷 Tom</button>
-          <button onClick={() => login("Ali")}>👷 Ali</button>
-
-          <hr />
-
-          <button
-            onClick={() => login("Dispo")}
-            style={{ background: "#333", color: "white" }}
-          >
-            🧠 Disposition
-          </button>
-        </div>
-      )}
-
-      {/* ================= DISPO ================= */}
-      {user && isDispo && (
         <>
-          <button onClick={logout}>🚪 Logout</button>
-
-          <h2>📋 Disposition</h2>
-
-          <div style={{
-            border: "2px solid #ccc",
-            padding: 15,
-            borderRadius: 10,
-            marginBottom: 20
-          }}>
-            <h3>➕ Neuer Auftrag</h3>
-
-            <input placeholder="Nr"
-              value={form.nummer}
-              onChange={(e) => setForm({ ...form, nummer: e.target.value })}
-            />
-
-            <input placeholder="Straße"
-              value={form.strasse}
-              onChange={(e) => setForm({ ...form, strasse: e.target.value })}
-            />
-
-            <input placeholder="Ort"
-              value={form.plzOrt}
-              onChange={(e) => setForm({ ...form, plzOrt: e.target.value })}
-            />
-
-            <select value={form.material}
-              onChange={(e) => setForm({ ...form, material: e.target.value })}>
-              <option value="">Material</option>
-              {materialListe.map((m, i) => (
-                <option key={i}>{m}</option>
-              ))}
-            </select>
-
-            <select value={form.fahrer}
-              onChange={(e) => setForm({ ...form, fahrer: e.target.value })}>
-              <option value="">Fahrer</option>
-              <option>Max</option>
-              <option>Tom</option>
-              <option>Ali</option>
-            </select>
-
-            <button onClick={addAuftrag}>➕ Erstellen</button>
-          </div>
-
-          {auftraege.map((a) => (
-            <div key={a._id} style={{
-              border: "1px solid #ddd",
-              padding: 10,
-              marginBottom: 10
-            }}>
-              #{a.nummer} - {a.status}
-
-              <button onClick={() => deleteAuftrag(a._id)}>🗑</button>
-            </div>
-          ))}
+          <select onChange={(e) => setLoginName(e.target.value)}>
+            <option value="">Wählen</option>
+            <option>Max</option>
+            <option>Tom</option>
+            <option>Ali</option>
+            <option>Dispo</option>
+          </select>
+          <button onClick={login}>Login</button>
         </>
       )}
 
-      {/* ================= FAHRER ================= */}
-      {user && !isDispo && (
+      {/* ✅ FAHRER ANSICHT (NEU) */}
+      {user && isFahrer && (
         <>
-          <button onClick={logout}>🚪 Logout</button>
+          <button onClick={logout}>🚪 Logout ({user})</button>
 
-          <h2>🚛 Meine Aufträge</h2>
+          <h2>🚚 Meine Aufträge</h2>
 
           {meine.length === 0 && <p>Keine offenen Aufträge</p>}
 
           {meine.map((a) => (
             <div key={a._id} style={{
-              border: "1px solid #ddd",
+              border: "2px solid #ddd",
               padding: 10,
               marginBottom: 10
             }}>
-              #{a.nummer}
+              <b>#{a.nummer}</b><br />
+              📍 {a.strasse}<br />
+              📦 {a.material}
 
               <button onClick={() => toggleStatus(a._id)}>
                 ✅ Erledigt
@@ -234,6 +210,150 @@ function App() {
           ))}
         </>
       )}
+
+      {/* ✅ DEIN DISPO BLOCK (UNVERÄNDERT) */}
+      {user && isDispo && (
+        <>
+          <button onClick={logout} style={{
+            width: "100%",
+            padding: 12,
+            marginBottom: 20,
+            fontSize: 16
+          }}>
+            🚪 Logout
+          </button>
+
+          <h2>📋 Disposition</h2>
+
+          
+
+    {/* ================= NEUER AUFTRAG ================= */}
+    <div style={{
+      border: "2px solid #ccc",
+      padding: 15,
+      borderRadius: 10,
+      marginBottom: 20,
+      background: "#f9f9f9"
+    }}>
+      <h3>➕ Neuer Auftrag</h3>
+
+      <input placeholder="Nr"
+        value={form.nummer}
+        onChange={(e) => setForm({ ...form, nummer: e.target.value })}
+        style={{ width: "100%", marginBottom: 8 }}
+      />
+
+      <input placeholder="Straße"
+        value={form.strasse}
+        onChange={(e) => setForm({ ...form, strasse: e.target.value })}
+        style={{ width: "100%", marginBottom: 8 }}
+      />
+
+      <input placeholder="Ort"
+        value={form.plzOrt}
+        onChange={(e) => setForm({ ...form, plzOrt: e.target.value })}
+        style={{ width: "100%", marginBottom: 8 }}
+      />
+
+      <select value={form.material}
+        onChange={(e) => setForm({ ...form, material: e.target.value })}
+        style={{ width: "100%", marginBottom: 8 }}>
+        <option value="">Material wählen</option>
+        {materialListe.map((m, i) => (
+          <option key={i} value={m}>{m}</option>
+        ))}
+      </select>
+
+      <select value={form.fahrer}
+        onChange={(e) => setForm({ ...form, fahrer: e.target.value })}
+        style={{ width: "100%", marginBottom: 10 }}>
+        <option value="">Fahrer</option>
+        <option>Max</option>
+        <option>Tom</option>
+        <option>Ali</option>
+      </select>
+
+      <button onClick={addAuftrag} style={{
+        width: "100%",
+        padding: 12,
+        fontSize: 16
+      }}>
+        ➕ Auftrag erstellen
+      </button>
+    </div>
+
+    {/* ================= AUFTRÄGE ================= */}
+    <h3>🚛 Aufträge</h3>
+
+    {auftraege.map((a) => (
+      <div key={a._id} style={{
+        border: "2px solid #ddd",
+        borderRadius: 12,
+        padding: 15,
+        marginBottom: 15,
+        background: "#fff",
+        boxShadow: "0 2px 6px rgba(0,0,0,0.1)"
+      }}>
+        <div style={{ fontSize: 18, fontWeight: "bold" }}>
+          #{a.nummer}
+        </div>
+
+        <div>👤 Fahrer: <b>{a.fahrer}</b></div>
+        <div>📦 Material: {a.material}</div>
+
+        <div style={{ marginTop: 5 }}>
+          📍 {a.strasse}<br />
+          {a.plzOrt}
+        </div>
+
+        <div style={{
+          marginTop: 8,
+          fontWeight: "bold",
+          color: a.status === "erledigt" ? "green" : "red"
+        }}>
+          {a.status.toUpperCase()}
+        </div>
+
+        {a.gps?.lat && (
+          <a
+            href={`https://www.google.com/maps?q=${a.gps.lat},${a.gps.lng}`}
+            target="_blank"
+            rel="noreferrer"
+            style={{ display: "block", marginTop: 8 }}
+          >
+            📍 Standort öffnen
+          </a>
+        )}
+
+        {/* BUTTONS */}
+        <div style={{
+          display: "flex",
+          gap: 10,
+          marginTop: 10
+        }}>
+          <button
+            onClick={() => createPDF(a)}
+            style={{ flex: 1, padding: 10 }}
+          >
+            📄 PDF
+          </button>
+
+          <button
+            onClick={() => deleteAuftrag(a._id)}
+            style={{
+              flex: 1,
+              padding: 10,
+              background: "#ff4d4d",
+              color: "white"
+            }}
+          >
+            🗑 Löschen
+          </button>
+        </div>
+      </div>
+    ))}
+  </>
+)}
     </div>
   );
 }
