@@ -22,6 +22,8 @@ function App() {
 
   const [loginName, setLoginName] = useState("");
 
+  const [password, setPassword] = useState("");
+
   const [filter, setFilter] = useState("offen");
 
   const [form, setForm] = useState({
@@ -48,30 +50,39 @@ function App() {
 
   // ✅ STABILER LOGIN
   const login = async () => {
-    if (!loginName) return alert("Bitte auswählen");
+      if (!loginName) return alert("Bitte auswählen");
+      if (!password) return alert("Passwort eingeben");
 
-    try {
-      const res = await fetch(API + "/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: loginName }),
-      });
-
-      if (!res.ok) throw new Error("Login fehlgeschlagen");
-
-      const data = await res.json();
-
-      if (data?.name) {
-        localStorage.setItem("fahrer", data.name);
-        setUser(data.name);
-      } else {
-        alert("Ungültiger Login");
+  // ✅ PASSWORT LOGIK
+      if (loginName === "Dispo" && password !== "987654") {
+        return alert("Falsches Dispo Passwort");
       }
-    } catch (err) {
-      console.error(err);
-      alert("Serverfehler beim Login");
+
+      if (loginName !== "Dispo" && password !== "1234") {
+        return alert("Falsches Fahrer Passwort");
+      }
+
+  try {
+  const res = await fetch(API + "/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: loginName }),
+    });
+
+    if (!res.ok) throw new Error("Login fehlgeschlagen");
+
+  const data = await res.json();
+
+    if (data?.name) {
+      localStorage.setItem("fahrer", data.name);
+      setUser(data.name);
+      setPassword(""); // sauber zurücksetzen
     }
-  };
+  } catch (err) {
+    console.error(err);
+    alert("Serverfehler beim Login");
+  }
+};
 
   const logout = () => {
     localStorage.removeItem("fahrer");
@@ -187,6 +198,14 @@ function App() {
             <option>Ali</option>
             <option>Dispo</option>
           </select>
+
+          <input
+            type="password"
+            placeholder="Passwort"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            style={{ marginLeft: 10 }}
+          />
           <button onClick={login}>Login</button>
         </>
       )}
