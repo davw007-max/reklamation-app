@@ -22,6 +22,8 @@ function App() {
 
   const [loginName, setLoginName] = useState("");
 
+  const [filter, setFilter] = useState("offen");
+
   const [form, setForm] = useState({
     nummer: "",
     strasse: "",
@@ -166,6 +168,11 @@ function App() {
     (a) => a.fahrer === user && a.status === "offen"
   );
 
+  const gefilterteAuftraege = auftraege.filter((a) => {
+    if (filter === "alle") return true;
+    return a.status === filter;
+  });
+
   return (
     <div style={{ padding: 20 }}>
       <h1>🚛 App</h1>
@@ -282,10 +289,39 @@ function App() {
       </button>
     </div>
 
+    {/* ================= AUFTRAGSFILTER ================= */}
+    <div style={{ marginBottom: 15 }}>
+  <button onClick={() => setFilter("offen")} style={{
+    marginRight: 10,
+    background: filter === "offen" ? "#007bff" : "#ccc",
+    color: "white",
+    padding: 8
+  }}>
+    🔴 Offen
+  </button>
+
+  <button onClick={() => setFilter("erledigt")} style={{
+    marginRight: 10,
+    background: filter === "erledigt" ? "green" : "#ccc",
+    color: "white",
+    padding: 8
+  }}>
+    🟢 Erledigt
+  </button>
+
+  <button onClick={() => setFilter("alle")} style={{
+    background: filter === "alle" ? "#444" : "#ccc",
+    color: "white",
+    padding: 8
+  }}>
+    📋 Alle
+  </button>
+</div>
+
     {/* ================= AUFTRÄGE ================= */}
     <h3>🚛 Aufträge</h3>
 
-    {auftraege.map((a) => (
+    {gefilterteAuftraege.map((a) => (
       <div key={a._id} style={{
         border: "2px solid #ddd",
         borderRadius: 12,
