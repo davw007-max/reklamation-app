@@ -227,7 +227,8 @@ function App() {
             }}>
               <b>#{a.nummer}</b><br />
               📍 {a.strasse}<br />
-              📦 {a.material}
+              {a.plzOrt}<br />
+              📦 {a.material}<br />
 
               <button onClick={() => toggleStatus(a._id)}>
                 ✅ Erledigt
