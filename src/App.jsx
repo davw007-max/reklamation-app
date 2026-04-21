@@ -21,9 +21,7 @@ function App() {
   });
 
   const [loginName, setLoginName] = useState("");
-
   const [password, setPassword] = useState("");
-
   const [filter, setFilter] = useState("offen");
 
   const [form, setForm] = useState({
@@ -50,39 +48,39 @@ function App() {
 
   // ✅ STABILER LOGIN
   const login = async () => {
-      if (!loginName) return alert("Bitte auswählen");
-      if (!password) return alert("Passwort eingeben");
+    if (!loginName) return alert("Bitte auswählen");
+    if (!password) return alert("Passwort eingeben");
 
-  // ✅ PASSWORT LOGIK
-      if (loginName === "Dispo" && password !== "987654") {
-        return alert("Falsches Dispo Passwort");
-      }
-
-      if (loginName !== "Dispo" && password !== "1234") {
-        return alert("Falsches Fahrer Passwort");
-      }
-
-  try {
-  const res = await fetch(API + "/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: loginName }),
-    });
-
-    if (!res.ok) throw new Error("Login fehlgeschlagen");
-
-  const data = await res.json();
-
-    if (data?.name) {
-      localStorage.setItem("fahrer", data.name);
-      setUser(data.name);
-      setPassword(""); // sauber zurücksetzen
+    // ✅ PASSWORT LOGIK
+    if (loginName === "Dispo" && password !== "987654") {
+      return alert("Falsches Dispo Passwort");
     }
-  } catch (err) {
-    console.error(err);
-    alert("Serverfehler beim Login");
-  }
-};
+
+    if (loginName !== "Dispo" && password !== "1234") {
+      return alert("Falsches Fahrer Passwort");
+    }
+
+    try {
+      const res = await fetch(API + "/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: loginName }),
+      });
+
+      if (!res.ok) throw new Error("Login fehlgeschlagen");
+
+      const data = await res.json();
+
+      if (data?.name) {
+        localStorage.setItem("fahrer", data.name);
+        setUser(data.name);
+        setPassword(""); // sauber zurücksetzen
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Serverfehler beim Login");
+    }
+  };
 
   const logout = () => {
     localStorage.removeItem("fahrer");
@@ -90,27 +88,27 @@ function App() {
   };
 
   const addAuftrag = async () => {
-  if (!form.material) return alert("Material wählen!");
+    if (!form.material) return alert("Material wählen!");
 
-  await fetch(API + "/auftraege", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      ...form,
-      status: form.fahrer ? "offen" : "ungeplant"
-    }),
-  });
+    await fetch(API + "/auftraege", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ...form,
+        status: form.fahrer ? "offen" : "ungeplant"
+      }),
+    });
 
-  setForm({
-    nummer: "",
-    strasse: "",
-    plzOrt: "",
-    material: "",
-    fahrer: "",
-  });
+    setForm({
+      nummer: "",
+      strasse: "",
+      plzOrt: "",
+      material: "",
+      fahrer: "",
+    });
 
-  loadData();
-};
+    loadData();
+  };
 
   const deleteAuftrag = async (id) => {
     if (!window.confirm("Auftrag wirklich löschen?")) return;
@@ -141,6 +139,7 @@ function App() {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          status: "erledigt", // ✅ FIX
           lat: pos?.coords?.latitude,
           lng: pos?.coords?.longitude,
         }),
@@ -254,192 +253,202 @@ function App() {
 
           <h2>📋 Disposition</h2>
 
-          
+          {/* ================= NEUER AUFTRAG ================= */}
+          <div style={{
+            border: "2px solid #ccc",
+            padding: 15,
+            borderRadius: 10,
+            marginBottom: 20,
+            background: "#f9f9f9"
+          }}>
+            <h3>➕ Neuer Auftrag</h3>
 
-    {/* ================= NEUER AUFTRAG ================= */}
-    <div style={{
-      border: "2px solid #ccc",
-      padding: 15,
-      borderRadius: 10,
-      marginBottom: 20,
-      background: "#f9f9f9"
-    }}>
-      <h3>➕ Neuer Auftrag</h3>
+            <input placeholder="Nr"
+              value={form.nummer}
+              onChange={(e) => setForm({ ...form, nummer: e.target.value })}
+              style={{ width: "100%", marginBottom: 8 }}
+            />
 
-      <input placeholder="Nr"
-        value={form.nummer}
-        onChange={(e) => setForm({ ...form, nummer: e.target.value })}
-        style={{ width: "100%", marginBottom: 8 }}
-      />
+            <input placeholder="Straße"
+              value={form.strasse}
+              onChange={(e) => setForm({ ...form, strasse: e.target.value })}
+              style={{ width: "100%", marginBottom: 8 }}
+            />
 
-      <input placeholder="Straße"
-        value={form.strasse}
-        onChange={(e) => setForm({ ...form, strasse: e.target.value })}
-        style={{ width: "100%", marginBottom: 8 }}
-      />
+            <input placeholder="Ort"
+              value={form.plzOrt}
+              onChange={(e) => setForm({ ...form, plzOrt: e.target.value })}
+              style={{ width: "100%", marginBottom: 8 }}
+            />
 
-      <input placeholder="Ort"
-        value={form.plzOrt}
-        onChange={(e) => setForm({ ...form, plzOrt: e.target.value })}
-        style={{ width: "100%", marginBottom: 8 }}
-      />
+            <select value={form.material}
+              onChange={(e) => setForm({ ...form, material: e.target.value })}
+              style={{ width: "100%", marginBottom: 8 }}>
+              <option value="">Material wählen</option>
+              {materialListe.map((m, i) => (
+                <option key={i} value={m}>{m}</option>
+              ))}
+            </select>
 
-      <select value={form.material}
-        onChange={(e) => setForm({ ...form, material: e.target.value })}
-        style={{ width: "100%", marginBottom: 8 }}>
-        <option value="">Material wählen</option>
-        {materialListe.map((m, i) => (
-          <option key={i} value={m}>{m}</option>
-        ))}
-      </select>
+            <select value={form.fahrer}
+              onChange={(e) => setForm({ ...form, fahrer: e.target.value })}
+              style={{ width: "100%", marginBottom: 10 }}>
+              <option value="">Fahrer</option>
+              <option>Max</option>
+              <option>Tom</option>
+              <option>Ali</option>
+            </select>
 
-      <select value={form.fahrer}
-        onChange={(e) => setForm({ ...form, fahrer: e.target.value })}
-        style={{ width: "100%", marginBottom: 10 }}>
-        <option value="">Fahrer</option>
-        <option>Max</option>
-        <option>Tom</option>
-        <option>Ali</option>
-      </select>
+            <button onClick={addAuftrag} style={{
+              width: "100%",
+              padding: 12,
+              fontSize: 16
+            }}>
+              ➕ Auftrag erstellen
+            </button>
+          </div>
 
-      <button onClick={addAuftrag} style={{
-        width: "100%",
-        padding: 12,
-        fontSize: 16
-      }}>
-        ➕ Auftrag erstellen
-      </button>
-    </div>
+          {/* ================= AUFTRAGSFILTER ================= */}
+          <div style={{ marginBottom: 15 }}>
+            <button onClick={() => setFilter("offen")} style={{
+              marginRight: 10,
+              background: filter === "offen" ? "#007bff" : "#ccc",
+              color: "white",
+              padding: 8
+            }}>
+              🔴 Offen
+            </button>
 
-    {/* ================= AUFTRAGSFILTER ================= */}
-    <div style={{ marginBottom: 15 }}>
-  <button onClick={() => setFilter("offen")} style={{
-    marginRight: 10,
-    background: filter === "offen" ? "#007bff" : "#ccc",
-    color: "white",
-    padding: 8
-  }}>
-    🔴 Offen
-  </button>
+            <button onClick={() => setFilter("erledigt")} style={{
+              marginRight: 10,
+              background: filter === "erledigt" ? "green" : "#ccc",
+              color: "white",
+              padding: 8
+            }}>
+              🟢 Erledigt
+            </button>
 
-  <button onClick={() => setFilter("erledigt")} style={{
-    marginRight: 10,
-    background: filter === "erledigt" ? "green" : "#ccc",
-    color: "white",
-    padding: 8
-  }}>
-    🟢 Erledigt
-  </button>
+            {/* ➕ ERGÄNZUNG: ungeplant */}
+            <button onClick={() => setFilter("ungeplant")} style={{
+              marginRight: 10,
+              background: filter === "ungeplant" ? "orange" : "#ccc",
+              color: "white",
+              padding: 8
+            }}>
+              🟡 Ungeplant
+            </button>
 
-  <button onClick={() => setFilter("alle")} style={{
-    background: filter === "alle" ? "#444" : "#ccc",
-    color: "white",
-    padding: 8
-  }}>
-    📋 Alle
-  </button>
-</div>
+            <button onClick={() => setFilter("alle")} style={{
+              background: filter === "alle" ? "#444" : "#ccc",
+              color: "white",
+              padding: 8
+            }}>
+              📋 Alle
+            </button>
+          </div>
 
-    {/* ================= AUFTRÄGE ================= */}
-    <h3>🚛 Aufträge</h3>
+          {/* ================= AUFTRÄGE ================= */}
+          <h3>🚛 Aufträge</h3>
 
-    {gefilterteAuftraege.map((a) => (
-      <div key={a._id} style={{
-        border: "2px solid #ddd",
-        borderRadius: 12,
-        padding: 15,
-        marginBottom: 15,
-        background: "#fff",
-        boxShadow: "0 2px 6px rgba(0,0,0,0.1)"
-      }}>
-        <div style={{ fontSize: 18, fontWeight: "bold" }}>
-          #{a.nummer}
-        </div>
-        <select
-  value={a.fahrer || ""}
-  onChange={(e) =>
-    fetch(`${API}/auftraege/${a._id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        fahrer: e.target.value,
-        status: "offen"
-      }),
-    }).then(loadData)
-  }
->
-  <option value="">-- Fahrer wählen --</option>
-  <option>Max</option>
-  <option>Tom</option>
-  <option>Ali</option>
-</select>
+          {gefilterteAuftraege.map((a) => (
+            <div key={a._id} style={{
+              border: "2px solid #ddd",
+              borderRadius: 12,
+              padding: 15,
+              marginBottom: 15,
+              background: "#fff",
+              boxShadow: "0 2px 6px rgba(0,0,0,0.1)"
+            }}>
+              <div style={{ fontSize: 18, fontWeight: "bold" }}>
+                #{a.nummer}
+              </div>
 
-        <div>👤 Fahrer: <b>{a.fahrer}</b></div>
-        <div>📦 Material: {a.material}</div>
+              <select
+                value={a.fahrer || ""}
+                onChange={(e) =>
+                  fetch(`${API}/auftraege/${a._id}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      fahrer: e.target.value,
+                      status: "offen"
+                    }),
+                  }).then(loadData)
+                }
+              >
+                <option value="">-- Fahrer wählen --</option>
+                <option>Max</option>
+                <option>Tom</option>
+                <option>Ali</option>
+              </select>
 
-        <div style={{ marginTop: 5 }}>
-          📍 {a.strasse}<br />
-          {a.plzOrt}
-        </div>
-        <input
-  value={a.strasse}
-  onChange={(e) =>
-    fetch(`${API}/auftraege/${a._id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ strasse: e.target.value }),
-    }).then(loadData)
-  }
-/>
+              <div>👤 Fahrer: <b>{a.fahrer}</b></div>
+              <div>📦 Material: {a.material}</div>
 
-        <div style={{
-          marginTop: 8,
-          fontWeight: "bold",
-          color: a.status === "erledigt" ? "green" : "red"
-        }}>
-          {a.status.toUpperCase()}
-        </div>
+              <div style={{ marginTop: 5 }}>
+                📍 {a.strasse}<br />
+                {a.plzOrt}
+              </div>
 
-        {a.gps?.lat && (
-          <a
-            href={`https://www.google.com/maps?q=${a.gps.lat},${a.gps.lng}`}
-            target="_blank"
-            rel="noreferrer"
-            style={{ display: "block", marginTop: 8 }}
-          >
-            📍 Standort öffnen
-          </a>
-        )}
+              <input
+                value={a.strasse}
+                onChange={(e) =>
+                  fetch(`${API}/auftraege/${a._id}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ strasse: e.target.value }),
+                  }).then(loadData)
+                }
+              />
 
-        {/* BUTTONS */}
-        <div style={{
-          display: "flex",
-          gap: 10,
-          marginTop: 10
-        }}>
-          <button
-            onClick={() => createPDF(a)}
-            style={{ flex: 1, padding: 10 }}
-          >
-            📄 PDF
-          </button>
+              <div style={{
+                marginTop: 8,
+                fontWeight: "bold",
+                color: a.status === "erledigt" ? "green" : "red"
+              }}>
+                {a.status.toUpperCase()}
+              </div>
 
-          <button
-            onClick={() => deleteAuftrag(a._id)}
-            style={{
-              flex: 1,
-              padding: 10,
-              background: "#ff4d4d",
-              color: "white"
-            }}
-          >
-            🗑 Löschen
-          </button>
-        </div>
-      </div>
-    ))}
-  </>
-)}
+              {a.gps?.lat && (
+                <a
+                  href={`https://www.google.com/maps?q=${a.gps.lat},${a.gps.lng}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ display: "block", marginTop: 8 }}
+                >
+                  📍 Standort öffnen
+                </a>
+              )}
+
+              {/* BUTTONS */}
+              <div style={{
+                display: "flex",
+                gap: 10,
+                marginTop: 10
+              }}>
+                <button
+                  onClick={() => createPDF(a)}
+                  style={{ flex: 1, padding: 10 }}
+                >
+                  📄 PDF
+                </button>
+
+                <button
+                  onClick={() => deleteAuftrag(a._id)}
+                  style={{
+                    flex: 1,
+                    padding: 10,
+                    background: "#ff4d4d",
+                    color: "white"
+                  }}
+                >
+                  🗑 Löschen
+                </button>
+              </div>
+            </div>
+          ))}
+        </>
+      )}
     </div>
   );
 }
