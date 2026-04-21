@@ -90,25 +90,27 @@ function App() {
   };
 
   const addAuftrag = async () => {
-    if (!form.fahrer) return alert("Fahrer wählen!");
-    if (!form.material) return alert("Material wählen!");
+  if (!form.material) return alert("Material wählen!");
 
-    await fetch(API + "/auftraege", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
+  await fetch(API + "/auftraege", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      ...form,
+      status: form.fahrer ? "offen" : "ungeplant"
+    }),
+  });
 
-    setForm({
-      nummer: "",
-      strasse: "",
-      plzOrt: "",
-      material: "",
-      fahrer: "",
-    });
+  setForm({
+    nummer: "",
+    strasse: "",
+    plzOrt: "",
+    material: "",
+    fahrer: "",
+  });
 
-    loadData();
-  };
+  loadData();
+};
 
   const deleteAuftrag = async (id) => {
     if (!window.confirm("Auftrag wirklich löschen?")) return;
@@ -353,6 +355,24 @@ function App() {
         <div style={{ fontSize: 18, fontWeight: "bold" }}>
           #{a.nummer}
         </div>
+        <select
+  value={a.fahrer || ""}
+  onChange={(e) =>
+    fetch(`${API}/auftraege/${a._id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        fahrer: e.target.value,
+        status: "offen"
+      }),
+    }).then(loadData)
+  }
+>
+  <option value="">-- Fahrer wählen --</option>
+  <option>Max</option>
+  <option>Tom</option>
+  <option>Ali</option>
+</select>
 
         <div>👤 Fahrer: <b>{a.fahrer}</b></div>
         <div>📦 Material: {a.material}</div>
@@ -361,6 +381,16 @@ function App() {
           📍 {a.strasse}<br />
           {a.plzOrt}
         </div>
+        <input
+  value={a.strasse}
+  onChange={(e) =>
+    fetch(`${API}/auftraege/${a._id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ strasse: e.target.value }),
+    }).then(loadData)
+  }
+/>
 
         <div style={{
           marginTop: 8,
