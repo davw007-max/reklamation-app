@@ -230,7 +230,34 @@ function App() {
               {a.plzOrt}<br />
               📦 {a.material}<br />
 
-              <button onClick={() => toggleStatus(a._id)}>
+              {/* ========================================= */}
+              {/* ✅ NEU: GOOGLE MAPS ROUTEN-BUTTON       */}
+              {/* ========================================= */}
+              <a 
+                href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(a.strasse + ", " + a.plzOrt)}`}
+                target="_blank" 
+                rel="noopener noreferrer"
+                style={{
+                  display: "inline-block",
+                  background: "#4285F4",
+                  color: "white",
+                  padding: "8px 12px",
+                  textDecoration: "none",
+                  borderRadius: "5px",
+                  marginTop: "10px",
+                  marginBottom: "10px",
+                  marginRight: "10px",
+                  fontWeight: "bold"
+                }}
+              >
+                🗺️ Route starten
+              </a>
+              {/* ========================================= */}
+
+              <button 
+                onClick={() => toggleStatus(a._id)}
+                style={{ padding: "8px 12px" }}
+              >
                 ✅ Erledigt
               </button>
             </div>
