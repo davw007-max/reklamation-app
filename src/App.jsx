@@ -277,20 +277,7 @@ function App() {
     }
   };
 
-  useEffect(() => {
-    if (meine.length > prevMeineLength.current) {
-      if (user && user !== "Dispo") {
-        playNotification();
-      }
-    }
-    prevMeineLength.current = meine.length;
-  }, [meine.length, user]); 
-  // ==========================================
-    // Aktuelle Länge für den nächsten Abgleich speichern
-    prevMeineLength.current = meine.length;
-  }, [meine.length, user]); 
-  // ==========================================
-
+  
   const gefilterteAuftraege = auftraege.filter((a) => {
     if (filter === "alle") return true;
     return a.status === filter;
@@ -349,8 +336,8 @@ function App() {
               {/* ========================================= */}
               {/* ✅ NEU: GOOGLE MAPS ROUTEN-BUTTON       */}
               {/* ========================================= */}
-              <a 
-                href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(a.strasse + ", " + a.plzOrt)}`}
+                <a 
+                 href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(a.strasse + ", " + a.plzOrt)}`}
                 target="_blank" 
                 rel="noopener noreferrer"
                 style={{
@@ -529,7 +516,7 @@ function App() {
 
         {a.gps?.lat && (
           <a
-            href={`https://www.google.com/maps?q=${a.gps.lat},${a.gps.lng}`}
+            href={`https://www.google.com/maps/search/?api=1&query=${a.gps.lat},${a.gps.lng}`}
             target="_blank"
             rel="noreferrer"
             style={{ display: "block", marginTop: 8 }}
