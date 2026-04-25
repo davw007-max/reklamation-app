@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import jsPDF from "jspdf";
 // ✅ NEU: Socket.io importieren
 import { io } from "socket.io-client"; 
@@ -212,6 +212,57 @@ function App() {
   const meine = auftraege.filter(
     (a) => a.fahrer === user && a.status === "offen"
   );
+
+  // ==========================================
+  // ✅ NEU: NOTIFICATION SYSTEM FÜR FAHRER
+  // ==========================================
+  
+  // Speichert die vorherige Anzahl der Aufträge, um Vergleiche zu ziehen
+  const prevMeineLength = useRef(meine.length);
+
+  const playNotification = () => {
+    // 1. VIBRATION: Das Handy 2x kurz vibrieren lassen (funktioniert auf Android)
+    if (navigator.vibrate) {
+      navigator.vibrate([200, 100, 200]); // 200ms an, 100ms Pause, 200ms an
+    }
+
+    // 2. TON: Einen kurzen "Piep"-Ton erzeugen (funktioniert überall)
+    try {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (AudioContext) {
+        const ctx = new AudioContext();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.type = "sine"; // Angenehmer, weicher Ton
+        osc.frequency.setValueAtTime(880, ctx.currentTime); // Tonhöhe (880 Hz = Note A5)
+        gain.gain.setValueAtTime(1, ctx.currentTime);
+
+        osc.start();
+        // Ton nach einer halben Sekunde sanft ausklingen lassen
+        gain.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.5);
+        osc.stop(ctx.currentTime + 0.5);
+      }
+    } catch (error) {
+      console.error("Audio wird nicht unterstützt:", error);
+    }
+  };
+
+  useEffect(() => {
+    // Wenn die Liste der Aufträge jetzt länger ist als vorher:
+    if (meine.length > prevMeineLength.current) {
+      // Nur abspielen, wenn der Fahrer auch wirklich eingeloggt ist
+      if (user && user !== "Dispo") {
+        playNotification();
+      }
+    }
+    // Aktuelle Länge für den nächsten Abgleich speichern
+    prevMeineLength.current = meine.length;
+  }, [meine.length, user]); 
+  // ==========================================
 
   const gefilterteAuftraege = auftraege.filter((a) => {
     if (filter === "alle") return true;
