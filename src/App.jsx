@@ -320,9 +320,20 @@ const handleFehlanfahrt = async (id, file) => { // ✅ NEU: async hinzugefügt
       // Beweisfoto einfügen, falls vorhanden
       if (imageBase64) {
         try {
-          // Breite 60mm, Höhe 80mm
-          pdf.addImage(imageBase64, 15, y, 60, 80); 
-          y += 85;
+          // ✅ NEU: Original-Proportionen aus dem Bild auslesen
+          const imgProps = pdf.getImageProperties(imageBase64);
+          const maxWidth = 80;  // Maximale Breite in mm
+          const maxHeight = 80; // Maximale Höhe in mm
+          
+          // Skalierungsfaktor berechnen (nimmt den kleineren Wert, damit beides passt)
+          const ratio = Math.min(maxWidth / imgProps.width, maxHeight / imgProps.height);
+          const imgWidth = imgProps.width * ratio;
+          const imgHeight = imgProps.height * ratio;
+
+          // Bild mit den dynamisch berechneten Werten drucken
+          pdf.addImage(imageBase64, "JPEG", 15, y, imgWidth, imgHeight); 
+          y += imgHeight + 5; // Dynamischen Abstand addieren, je nachdem wie hoch das Bild wurde
+
         } catch(e) {
           pdf.text("[Bild konnte nicht geladen werden]", 15, y); y += 7;
         }

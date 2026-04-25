@@ -222,8 +222,9 @@ app.put("/auftraege/:id", async (req, res) => {
 
         if (imageBase64) {
           try {
-            doc.image(Buffer.from(imageBase64.split(",")[1], "base64"), 40, y, { width: 220 });
-            y += 180;
+            // ✅ NEU: 'fit' sorgt dafür, dass das Bild proportional in eine 220x180 Box eingepasst wird
+            doc.image(Buffer.from(imageBase64.split(",")[1], "base64"), 40, y, { fit: [220, 180] });
+            y += 190; // Fixen Abstand nach unten lassen, damit nichts überschrieben wird
           } catch(e) {
             doc.text("[Bild konnte nicht geladen werden]", 40, y); y += 20;
           }
