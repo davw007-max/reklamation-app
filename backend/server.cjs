@@ -162,16 +162,42 @@ app.put("/auftraege/:id", async (req, res) => {
 
       doc.on("end", async () => {
         const pdfBuffer = Buffer.concat(chunks);
+
+        // --- NEUE DATEINAMEN-LOGIK (IDENTISCH ZUM FRONTEND) ---
+        const baseDate = auftrag.zeitErledigt || (auftrag.fehlanfahrt ? auftrag.fehlanfahrt.zeit : new Date());
+        const year = baseDate.getFullYear();
+        
+        // Präzise KW-Berechnung (ISO-Standard Logik wie im Frontend)
+        const getKW = (date) => {
+          const d = new Date(date);
+          d.setDate(d.getDate() + 4 - (d.getDay() || 7));
+          const yearStart = new Date(d.getFullYear(), 0, 1);
+          return Math.ceil(((d - yearStart) / 86400000 + 1) / 7);
+        };
+        const kw = getKW(baseDate);
+
+        const tag = String(baseDate.getDate()).padStart(2, "0");
+        const monat = String(baseDate.getMonth() + 1).padStart(2, "0");
+        const datum = `${tag}-${monat}-${year}`;
+
+        // ✅ NEU: Status auslesen und in den Dateinamen einbauen
         const currentStatus = auftrag.status.toUpperCase();
-        const fileName = `Bericht_${auftrag.nummer}_${currentStatus}.pdf`;
+        const fileName = `${year}_KW${kw}_${datum}_${auftrag.nummer}_${currentStatus}.pdf`;
 
         await transporter.sendMail({
           from: process.env.MAIL_USER,
           to: process.env.MAIL_TO,
-          subject: `Auftrag ${auftrag.nummer}: ${currentStatus}`,
-          text: `Anbei der detaillierte Bericht für Auftrag Nr. ${auftrag.nummer}.`,
-          attachments: [{ filename: fileName, content: pdfBuffer }],
+          subject: `${currentStatus}: Auftrag ${auftrag.nummer} (${datum})`,
+          text: `Anbei der Auftragsbericht für Nr. ${auftrag.nummer}.`,
+          attachments: [
+            {
+              filename: fileName, // Hier wird der neue Name verwendet
+              content: pdfBuffer,
+            },
+          ],
         });
+
+        console.log(`📧 Mail versendet: ${fileName}`);
       });
 
       // --- PDF LAYOUT ---

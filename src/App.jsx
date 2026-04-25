@@ -368,8 +368,9 @@ const handleFehlanfahrt = async (id, file) => { // ✅ NEU: async hinzugefügt
     pdf.setTextColor(150, 150, 150);
     pdf.text("Dieser Bericht wurde automatisch erstellt.", 105, 290, { align: "center" });
 
-    // Datei speichern
-    pdf.save(`${year}_KW${kw}_${datum}_${a.nummer}.pdf`);
+    // ✅ NEU: Status auslesen und Datei mit Status im Namen speichern
+    const currentStatus = a.status.toUpperCase();
+    pdf.save(`${year}_KW${kw}_${datum}_${a.nummer}_${currentStatus}.pdf`);
   };
 
   const getKW = (date) => {
