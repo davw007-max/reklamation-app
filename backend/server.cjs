@@ -177,10 +177,17 @@ app.put("/auftraege/:id", async (req, res) => {
       // --- PDF LAYOUT ---
       // Header & Logo
       doc.fontSize(20).text("AUFTRAGSBERICHT", 40, 40);
-      const logoBase64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAX0AAAC1CAYAAACztS88..."; // Dein Logo-String
+      
+      // ✅ DEIN FIRMENLOGO (Oben Rechts)
+      // WICHTIG: Füge hier deinen echten, langen Base64-String ein!
+      const logoBase64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAX0AAAC1CAYAAACztS88..."; 
+      
       try {
-          doc.image(Buffer.from(logoBase64.split(",")[1], "base64"), 400, 30, { width: 150 });
-      } catch(e) {}
+        // x: 400 (schiebt es nach rechts), y: 25 (schiebt es nach oben), width: 140 (Größe)
+        doc.image(Buffer.from(logoBase64.split(",")[1], "base64"), 400, 25, { width: 140 });
+      } catch(e) {
+        console.log("Fehler beim Logo-Druck im Backend", e);
+      }
       
       doc.moveTo(40, 85).lineTo(550, 85).stroke();
 

@@ -259,10 +259,23 @@ const handleFehlanfahrt = async (id, file) => { // ✅ NEU: async hinzugefügt
     pdf.setFontSize(18);
     pdf.setFont("helvetica", "bold");
     pdf.text("AUFTRAGSBERICHT", 15, 20);
-    pdf.setLineWidth(0.5);
-    pdf.line(15, 23, 195, 23); // Eine saubere Linie unter der Überschrift
 
-    let y = 33;
+    // ✅ DEIN FIRMENLOGO (Oben Rechts)
+    // WICHTIG: Füge hier exakt denselben Base64-String ein wie im Backend!
+    const logoBase64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAX0AAAC1CAYAAACztS88..."; 
+    
+    try {
+      // x: 140mm (rechts), y: 10mm (oben), Breite: 55mm, Höhe: 15mm
+      // Achte darauf, dass "PNG" oder "JPEG" dem Format deines Base64-Strings entspricht
+      pdf.addImage(logoBase64, "PNG", 140, 10, 55, 15);
+    } catch(e) {
+      console.error("Fehler beim Logo-Druck im Frontend", e);
+    }
+
+    pdf.setLineWidth(0.5);
+    pdf.line(15, 28, 195, 28); // Trennlinie leicht nach unten verschoben, damit sie unters Logo passt
+
+    let y = 38; // Startwert für den Text leicht nach unten angepasst
 
     // --- 3. Auftragsdetails ---
     pdf.setFontSize(12);
