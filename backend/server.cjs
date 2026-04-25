@@ -94,6 +94,64 @@ app.post("/login", (req, res) => {
   res.status(401).json({ success: false });
 });
 
+// ================= DEMO DATEN =================
+app.post("/demo-daten", async (req, res) => {
+  try {
+    // 1. Mülleimer leeren: Alle bisherigen Test-Aufträge löschen
+    await Auftrag.deleteMany({});
+
+    // 2. Perfekte Präsentations-Daten vorbereiten
+    const jetzt = new Date();
+    const vorEinerStunde = new Date(jetzt.getTime() - 60 * 60 * 1000);
+    const vorZweiStunden = new Date(jetzt.getTime() - 2 * 60 * 60 * 1000);
+
+    const demoAuftraege = [
+      {
+        nummer: "R-8001", strasse: "Hauptstraße 45", plzOrt: "80331 München",
+        material: "kom. Restmüll", fahrer: "Max", status: "offen",
+        zeit: jetzt.toLocaleString("de-DE")
+      },
+      {
+        nummer: "R-8002", strasse: "Gewerbepark Nord 12", plzOrt: "85748 Garching",
+        material: "Kartonage", fahrer: "", status: "offen", // Ohne Fahrer (zum Zuweisen)
+        zeit: jetzt.toLocaleString("de-DE")
+      },
+      {
+        nummer: "R-8003", strasse: "Schulweg 7", plzOrt: "81541 München",
+        material: "LVP", fahrer: "Tom", status: "erledigt",
+        zeit: vorZweiStunden.toLocaleString("de-DE"),
+        zeitErledigt: vorEinerStunde,
+        gps: { lat: 48.1351, lng: 11.5820 }
+      },
+      {
+        nummer: "R-8004", strasse: "Industrieallee 99", plzOrt: "85716 Unterschleißheim",
+        material: "Abrufleerung kom Restmüll", fahrer: "Ali", status: "fehlanfahrt",
+        zeit: vorZweiStunden.toLocaleString("de-DE"),
+        fehlanfahrt: {
+          zeit: vorEinerStunde,
+          gps: { lat: 48.2788, lng: 11.5714 },
+          // Ein winziges graues Dummy-Bild, damit der Bild-Container bei der Dispo nicht leer ist
+          bild: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=" 
+        }
+      },
+      {
+        nummer: "R-8005", strasse: "Am Stadion 1", plzOrt: "80939 München",
+        material: "kom. Restmüll", fahrer: "Max", status: "offen",
+        zeit: jetzt.toLocaleString("de-DE")
+      }
+    ];
+
+    // 3. In die Datenbank speichern und alle Handys/PCs updaten
+    await Auftrag.insertMany(demoAuftraege);
+    await updateClients();
+    
+    res.json({ success: true });
+  } catch (err) {
+    console.error("❌ Fehler beim Laden der Demo-Daten:", err);
+    res.status(500).json({ error: "Fehler beim Laden" });
+  }
+});
+
 // ================= ROUTEN =================
 app.get("/auftraege", async (req, res) => {
   res.json(await Auftrag.find());

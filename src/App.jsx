@@ -154,6 +154,17 @@ function App() {
     }
   };
 
+  const ladeDemoDaten = async () => {
+    if (!window.confirm("Achtung: Dies löscht alle aktuellen Aufträge und lädt 5 frische Demo-Aufträge für die Präsentation. Fortfahren?")) return;
+    
+    try {
+      await fetch(`${API}/demo-daten`, { method: "POST" });
+      setFilter("alle"); // Springt automatisch auf "Alle", damit der Chef direkt das volle Dashboard sieht
+    } catch (err) {
+      console.error("Fehler beim Laden der Demo-Daten:", err);
+    }
+  };
+
   const updateFahrer = async (id, neuerFahrer) => {
     try {
       await fetch(`${API}/auftraege/${id}`, {
@@ -588,7 +599,30 @@ const handleFehlanfahrt = async (id, file) => { // ✅ NEU: async hinzugefügt
 
           <h2>📋 Disposition</h2>
 
-          
+          {/* ========================================= */}
+          {/* ✅ NEU: MAGIC DEMO BUTTON FÜR DEN CHEF  */}
+          {/* ========================================= */}
+          <button 
+            onClick={ladeDemoDaten} 
+            style={{
+              width: "100%",
+              padding: 12,
+              marginBottom: 20,
+              fontSize: 16,
+              fontWeight: "bold",
+              background: "#6f42c1", // Ein schickes Lila, damit er auffällt
+              color: "white",
+              border: "none",
+              borderRadius: 8,
+              boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
+              cursor: "pointer"
+            }}
+          >
+            🪄 Demo-Board für Präsentation laden
+          </button>
+          {/* ========================================= */}
+
+                  
 
     {/* ================= NEUER AUFTRAG ================= */}
     <div style={{
