@@ -1,7 +1,12 @@
 import { useState, useEffect } from "react";
 import jsPDF from "jspdf";
+// ✅ NEU: Socket.io importieren
+import { io } from "socket.io-client"; 
 
 const API = "https://reklamation-backend.onrender.com";
+
+// ✅ NEU: Verbindung zum Backend herstellen
+const socket = io(API);
 
 const materialListe = [
   "kom. Restmüll",
@@ -13,7 +18,6 @@ const materialListe = [
 function App() {
   const [auftraege, setAuftraege] = useState([]);
 
-  // ✅ ROBUSTER LOGIN STATE (FIX)
   const [user, setUser] = useState(() => {
     const saved = localStorage.getItem("fahrer");
     if (!saved || saved === "null" || saved === "undefined") return "";
@@ -21,9 +25,7 @@ function App() {
   });
 
   const [loginName, setLoginName] = useState("");
-
   const [password, setPassword] = useState("");
-
   const [filter, setFilter] = useState("offen");
 
   const [form, setForm] = useState({
@@ -37,9 +39,24 @@ function App() {
   const isDispo = user === "Dispo";
   const isFahrer = user && user !== "Dispo";
 
+  // ==========================================
+  // ✅ NEU: Der Echtzeit-Listener
+  // ==========================================
   useEffect(() => {
-    loadData();
+    // Falls die Socket-Verbindung kurz braucht, laden wir einmalig klassisch
+    loadData(); 
+
+    // Lauscht auf das Event "auftraege" aus deinem server.cjs
+    socket.on("auftraege", (neueDaten) => {
+      setAuftraege(neueDaten);
+    });
+
+    // WICHTIG: Aufräumen, wenn die App geschlossen wird
+    return () => {
+      socket.off("auftraege");
+    };
   }, []);
+  // ==========================================
 
   const loadData = () => {
     fetch(API + "/auftraege")
@@ -47,6 +64,8 @@ function App() {
       .then(setAuftraege)
       .catch((err) => console.error("Fehler beim Laden:", err));
   };
+
+// ... AB HIER BLEIBT ALLES GENAU WIE VORHER ...
 
   // ✅ STABILER LOGIN
   const login = async () => {
