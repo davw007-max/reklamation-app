@@ -220,31 +220,43 @@ function App() {
   // Speichert die vorherige Anzahl der Aufträge, um Vergleiche zu ziehen
   const prevMeineLength = useRef(meine.length);
 
-  const playNotification = () => {
-    // 1. VIBRATION: Das Handy 2x kurz vibrieren lassen (funktioniert auf Android)
+const playNotification = () => {
+    // 1. VIBRATION: Intensiveres Muster für das Handy (Android)
     if (navigator.vibrate) {
-      navigator.vibrate([200, 100, 200]); // 200ms an, 100ms Pause, 200ms an
+      navigator.vibrate([300, 100, 300, 100, 500]); // Lang, kurz, lang, kurz, extra lang
     }
 
-    // 2. TON: Einen kurzen "Piep"-Ton erzeugen (funktioniert überall)
+    // 2. TON: Aufdringlicher Dreifach-Alarm
     try {
       const AudioContext = window.AudioContext || window.webkitAudioContext;
       if (AudioContext) {
         const ctx = new AudioContext();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
+        const now = ctx.currentTime;
 
-        osc.connect(gain);
-        gain.connect(ctx.destination);
+        // Hilfsfunktion für einen einzelnen, harten Piepton
+        const createBeep = (startTime, duration, frequency) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
 
-        osc.type = "sine"; // Angenehmer, weicher Ton
-        osc.frequency.setValueAtTime(880, ctx.currentTime); // Tonhöhe (880 Hz = Note A5)
-        gain.gain.setValueAtTime(1, ctx.currentTime);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
 
-        osc.start();
-        // Ton nach einer halben Sekunde sanft ausklingen lassen
-        gain.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.5);
-        osc.stop(ctx.currentTime + 0.5);
+          // "square" erzeugt einen aggressiveren, technischeren Alarmton
+          osc.type = "square"; 
+          osc.frequency.setValueAtTime(frequency, startTime);
+
+          // Ton abrupt an- und ausschalten für mehr "Alarm"-Gefühl
+          gain.gain.setValueAtTime(1, startTime);
+          gain.gain.setValueAtTime(0, startTime + duration);
+
+          osc.start(startTime);
+          osc.stop(startTime + duration);
+        };
+
+        // Das Alarm-Muster: Drei Töne hintereinander
+        createBeep(now, 0.15, 1200);        // 1. Kurzer, hoher Ton
+        createBeep(now + 0.25, 0.15, 1200); // 2. Kurzer, hoher Ton (0.1s Pause)
+        createBeep(now + 0.5, 0.4, 1200);   // 3. Etwas längerer Ton zum Abschluss
       }
     } catch (error) {
       console.error("Audio wird nicht unterstützt:", error);
