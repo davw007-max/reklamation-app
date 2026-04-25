@@ -141,6 +141,19 @@ function App() {
     loadData();
   };
 
+  const resetAuftrag = async (id) => {
+    try {
+      await fetch(`${API}/auftraege/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ statusUpdate: "reset" }),
+      });
+      loadData();
+    } catch (err) {
+      console.error("Fehler beim Zurücksetzen:", err);
+    }
+  };
+
   const updateFahrer = async (id, neuerFahrer) => {
     try {
       await fetch(`${API}/auftraege/${id}`, {
@@ -618,6 +631,48 @@ const handleFehlanfahrt = async (id, file) => { // ✅ NEU: async hinzugefügt
           >
             📄 PDF
           </button>
+
+          {/* ========================================= */}
+        {/* ✅ NEU: ANZEIGE BEI FEHLANFAHRT (DISPO)   */}
+        {/* ========================================= */}
+        {a.status === "fehlanfahrt" && (
+          <div style={{ 
+            marginTop: 15, 
+            padding: 10, 
+            background: "#fff3f3", 
+            border: "1px solid red", 
+            borderRadius: 8 
+          }}>
+            <strong style={{ color: "red", fontSize: 16 }}>⚠️ Fehlanfahrt gemeldet</strong>
+            
+            {/* Beweisfoto anzeigen, falls vorhanden */}
+            {a.fehlanfahrt?.bild && (
+              <img 
+                src={a.fehlanfahrt.bild} 
+                alt="Beweis" 
+                style={{ width: "100%", maxHeight: "250px", objectFit: "cover", marginTop: 10, borderRadius: 5 }} 
+              />
+            )}
+
+            {/* Button um den Auftrag wieder zum Fahrer zu schicken */}
+            <button 
+              onClick={() => resetAuftrag(a._id)}
+              style={{ 
+                width: "100%", 
+                padding: "10px", 
+                marginTop: 10, 
+                background: "orange", 
+                color: "white", 
+                fontWeight: "bold",
+                border: "none",
+                borderRadius: 5
+              }}
+            >
+              🔄 Erneut anfahren lassen (Status auf Offen)
+            </button>
+          </div>
+        )}
+        {/* ========================================= */}
 
           <button
             onClick={() => deleteAuftrag(a._id)}
