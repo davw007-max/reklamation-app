@@ -154,6 +154,32 @@ function App() {
     }
   };
 
+const handleFehlanfahrt = (id, file) => {
+    if (!file) return;
+
+    // FileReader wandelt das Bild in einen Base64-Textstring um
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = async () => {
+      const base64Bild = reader.result;
+
+      try {
+        await fetch(`${API}/auftraege/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ 
+            statusUpdate: "fehlanfahrt", 
+            bild: base64Bild 
+          }),
+        });
+        loadData();
+      } catch (err) {
+        console.error("Fehler beim Senden des Bildes:", err);
+        alert("Bild konnte nicht gesendet werden.");
+      }
+    };
+  };
+
   const toggleStatus = async (id) => {
     try {
       const getPosition = () =>
@@ -357,12 +383,47 @@ function App() {
               </a>
               {/* ========================================= */}
 
-              <button 
-                onClick={() => toggleStatus(a._id)}
-                style={{ padding: "8px 12px" }}
-              >
-                ✅ Erledigt
-              </button>
+              {/* BUTTONS FÜR DEN FAHRER */}
+              <div style={{ display: "flex", gap: "10px", marginTop: "10px" }}>
+                
+                {/* 1. Verstecktes Datei-Feld für die Kamera */}
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment" /* Öffnet direkt die Kamera auf dem Handy */
+                  id={`kamera-${a._id}`}
+                  style={{ display: "none" }}
+                  onChange={(e) => handleFehlanfahrt(a._id, e.target.files[0])}
+                />
+
+                {/* 2. Fehlanfahrt-Button (Löst das versteckte Datei-Feld aus) */}
+                <button 
+                  onClick={() => document.getElementById(`kamera-${a._id}`).click()}
+                  style={{ 
+                    padding: "8px 12px", 
+                    background: "orange", 
+                    color: "white", 
+                    flex: 1 
+                  }}
+                >
+                  📷 Keine Tonne
+                </button>
+
+                {/* 3. Normaler Erledigt-Button */}
+                <button 
+                  onClick={() => toggleStatus(a._id)}
+                  style={{ 
+                    padding: "8px 12px", 
+                    background: "green", 
+                    color: "white", 
+                    flex: 1 
+                  }}
+                >
+                  ✅ Erledigt
+                </button>
+              </div>
+
+              
             </div>
           ))}
         </>
