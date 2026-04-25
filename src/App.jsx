@@ -91,6 +91,8 @@ function App() {
 
   const addAuftrag = async () => {
     if (!form.fahrer) return alert("Fahrer wählen!");
+    //if (!form.material) return alert("Material wählen!");//
+
     if (!form.material) return alert("Material wählen!");
 
     await fetch(API + "/auftraege", {
@@ -118,6 +120,19 @@ function App() {
     });
 
     loadData();
+  };
+
+  const updateFahrer = async (id, neuerFahrer) => {
+    try {
+      await fetch(`${API}/auftraege/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fahrer: neuerFahrer }),
+      });
+      loadData(); // Liste neu laden, um Änderung zu sehen
+    } catch (err) {
+      console.error("Fehler beim Zuweisen:", err);
+    }
   };
 
   const toggleStatus = async (id) => {
@@ -381,7 +396,21 @@ function App() {
           #{a.nummer}
         </div>
 
-        <div>👤 Fahrer: <b>{a.fahrer}</b></div>
+        {/* Fahrer-Auswahl statt nur Text */}
+        <div style={{ marginTop: 5, marginBottom: 5 }}>
+          👤 Fahrer: 
+          <select 
+            value={a.fahrer || ""} 
+            onChange={(e) => updateFahrer(a._id, e.target.value)}
+            style={{ marginLeft: 10, padding: "4px", borderRadius: "5px" }}
+          >
+            <option value="">-- Nicht zugewiesen --</option>
+            <option>Max</option>
+            <option>Tom</option>
+            <option>Ali</option>
+          </select>
+        </div>
+
         <div>📦 Material: {a.material}</div>
 
         <div style={{ marginTop: 5 }}>
