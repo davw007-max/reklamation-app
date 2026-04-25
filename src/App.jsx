@@ -761,7 +761,7 @@ const handleFehlanfahrt = async (id, file) => { // ✅ NEU: async hinzugefügt
             📄 PDF
           </button>
 
-          {/* ========================================= */}
+        {/* ========================================= */}
         {/* ✅ NEU: ANZEIGE BEI FEHLANFAHRT (DISPO)   */}
         {/* ========================================= */}
         {a.status === "fehlanfahrt" && (
@@ -774,14 +774,32 @@ const handleFehlanfahrt = async (id, file) => { // ✅ NEU: async hinzugefügt
           }}>
             <strong style={{ color: "red", fontSize: 16 }}>⚠️ Fehlanfahrt gemeldet</strong>
             
-            {/* Beweisfoto anzeigen, falls vorhanden */}
+            {/* Beweisfoto in der Dispo-Ansicht mit automatischer Anpassung */}
             {a.fehlanfahrt?.bild && (
-              <img 
-                src={a.fehlanfahrt.bild} 
-                alt="Beweis" 
-                style={{ width: "100%", maxHeight: "250px", objectFit: "cover", marginTop: 10, borderRadius: 5 }} 
-              />
-            )}
+             <div style={{ 
+              width: "100%", 
+              height: "350px", // Feste Rahmenhöhe für die Dispo-Liste
+              background: "#f0f0f0", // Grauer Hintergrund für die Ränder bei Hochformat
+              marginTop: 10,
+              borderRadius: 8,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              overflow: "hidden"
+          }}>
+
+    <img 
+      src={a.fehlanfahrt.bild} 
+      alt="Beweis" 
+      style={{ 
+        maxWidth: "100%", 
+        maxHeight: "100%", 
+        objectFit: "contain", // ✅ DAS WICHTIGSTE: Bild behält Form und wird eingepasst
+        display: "block"
+      }} 
+    />
+  </div>
+)}
 
             {/* Button um den Auftrag wieder zum Fahrer zu schicken */}
             <button 
