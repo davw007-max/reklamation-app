@@ -104,11 +104,22 @@ app.post("/auftraege", async (req, res) => {
 // ================= PUT =================
 app.put("/auftraege/:id", async (req, res) => {
   try {
-    const { lat, lng } = req.body;
+    // ✅ NEU: 'fahrer' aus dem Body mit auslesen
+    const { lat, lng, fahrer } = req.body;
 
     const auftrag = await Auftrag.findById(req.params.id);
     if (!auftrag) return res.sendStatus(404);
 
+    // ✅ NEU: Wenn ein Fahrer im Request mitgeschickt wurde, 
+    // dann NUR den Fahrer ändern und abbrechen (KEIN Statuswechsel, KEIN PDF)
+    if (fahrer !== undefined) {
+      auftrag.fahrer = fahrer;
+      await auftrag.save();
+      await updateClients();
+      return res.json({ success: true });
+    }
+
+    // --- Ab hier läuft nur noch die normale "Erledigt"-Logik ---
     const wirdErledigt = auftrag.status === "offen";
     auftrag.status = wirdErledigt ? "erledigt" : "offen";
 
