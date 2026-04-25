@@ -154,10 +154,28 @@ function App() {
     }
   };
 
-const handleFehlanfahrt = (id, file) => {
+const handleFehlanfahrt = async (id, file) => { // ✅ NEU: async hinzugefügt
     if (!file) return;
 
-    // FileReader wandelt das Bild in einen Base64-Textstring um
+    // ==========================================
+    // ✅ NEU: 1. GPS Standort abfragen
+    // ==========================================
+    const getPosition = () =>
+      new Promise((resolve) => {
+        if (!navigator.geolocation) return resolve(null);
+        navigator.geolocation.getCurrentPosition(
+          (pos) => resolve(pos),
+          () => resolve(null),
+          { timeout: 5000 }
+        );
+      });
+
+    // Warten, bis das Handy den Standort gefunden hat
+    const pos = await getPosition(); 
+
+    // ==========================================
+    // 2. Bild umwandeln und ALLES an Server senden
+    // ==========================================
     const reader = new FileReader();
     reader.readAsDataURL(file);
     reader.onload = async () => {
@@ -169,7 +187,9 @@ const handleFehlanfahrt = (id, file) => {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ 
             statusUpdate: "fehlanfahrt", 
-            bild: base64Bild 
+            bild: base64Bild,
+            lat: pos?.coords?.latitude,  // ✅ NEU: GPS Breitengrad senden
+            lng: pos?.coords?.longitude  // ✅ NEU: GPS Längengrad senden
           }),
         });
         loadData();
