@@ -213,27 +213,44 @@ function App() {
     (a) => a.fahrer === user && a.status === "offen"
   );
 
-  // ==========================================
-  // ✅ NEU: NOTIFICATION SYSTEM FÜR FAHRER
+// ==========================================
+  // ✅ NEU: NOTIFICATION SYSTEM FÜR FAHRER (FIX)
   // ==========================================
   
-  // Speichert die vorherige Anzahl der Aufträge, um Vergleiche zu ziehen
+  // Speichert die vorherige Anzahl der Aufträge
   const prevMeineLength = useRef(meine.length);
 
-const playNotification = () => {
-    // 1. VIBRATION: Intensiveres Muster für das Handy (Android)
-    if (navigator.vibrate) {
-      navigator.vibrate([300, 100, 300, 100, 500]); // Lang, kurz, lang, kurz, extra lang
-    }
+  // Globaler Audio-Kontext (muss außerhalb der Funktion leben, um entsperrt zu werden)
+  const audioCtxRef = useRef(null);
 
-    // 2. TON: Aufdringlicher Dreifach-Alarm
-    try {
+  // Diese Funktion entsperrt das Audio-System beim ersten Klick auf den Bildschirm
+  const unlockAudio = () => {
+    if (!audioCtxRef.current) {
       const AudioContext = window.AudioContext || window.webkitAudioContext;
       if (AudioContext) {
-        const ctx = new AudioContext();
+        audioCtxRef.current = new AudioContext();
+      }
+    }
+    // Weckt das System auf, falls das Handy es schlafen geschickt hat
+    if (audioCtxRef.current && audioCtxRef.current.state === "suspended") {
+      audioCtxRef.current.resume();
+    }
+  };
+
+  const playNotification = () => {
+    // 1. VIBRATION (Android)
+    if (navigator.vibrate) {
+      navigator.vibrate([300, 100, 300, 100, 500]); 
+    }
+
+    // 2. TON
+    try {
+      unlockAudio(); // Sicherstellen, dass das System wach ist
+      const ctx = audioCtxRef.current;
+      
+      if (ctx) {
         const now = ctx.currentTime;
 
-        // Hilfsfunktion für einen einzelnen, harten Piepton
         const createBeep = (startTime, duration, frequency) => {
           const osc = ctx.createOscillator();
           const gain = ctx.createGain();
@@ -241,11 +258,9 @@ const playNotification = () => {
           osc.connect(gain);
           gain.connect(ctx.destination);
 
-          // "square" erzeugt einen aggressiveren, technischeren Alarmton
           osc.type = "square"; 
           osc.frequency.setValueAtTime(frequency, startTime);
 
-          // Ton abrupt an- und ausschalten für mehr "Alarm"-Gefühl
           gain.gain.setValueAtTime(1, startTime);
           gain.gain.setValueAtTime(0, startTime + duration);
 
@@ -253,24 +268,24 @@ const playNotification = () => {
           osc.stop(startTime + duration);
         };
 
-        // Das Alarm-Muster: Drei Töne hintereinander
-        createBeep(now, 0.15, 1200);        // 1. Kurzer, hoher Ton
-        createBeep(now + 0.25, 0.15, 1200); // 2. Kurzer, hoher Ton (0.1s Pause)
-        createBeep(now + 0.5, 0.4, 1200);   // 3. Etwas längerer Ton zum Abschluss
+        createBeep(now, 0.15, 1200);        
+        createBeep(now + 0.25, 0.15, 1200); 
+        createBeep(now + 0.5, 0.4, 1200);   
       }
     } catch (error) {
-      console.error("Audio wird nicht unterstützt:", error);
+      console.error("Audio blockiert:", error);
     }
   };
 
   useEffect(() => {
-    // Wenn die Liste der Aufträge jetzt länger ist als vorher:
     if (meine.length > prevMeineLength.current) {
-      // Nur abspielen, wenn der Fahrer auch wirklich eingeloggt ist
       if (user && user !== "Dispo") {
         playNotification();
       }
     }
+    prevMeineLength.current = meine.length;
+  }, [meine.length, user]); 
+  // ==========================================
     // Aktuelle Länge für den nächsten Abgleich speichern
     prevMeineLength.current = meine.length;
   }, [meine.length, user]); 
@@ -282,8 +297,12 @@ const playNotification = () => {
   });
 
   return (
-    <div style={{ padding: 20 }}>
-      <h1>🚛 App</h1>
+    <div 
+      style={{ padding: 20, minHeight: "100vh" }} 
+      onClick={unlockAudio} 
+      onTouchStart={unlockAudio}
+    >
+      <h1>🚛 Reklamations App</h1>
 
       {/* ✅ LOGIN */}
       {!user && (
