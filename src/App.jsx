@@ -246,18 +246,105 @@ const handleFehlanfahrt = async (id, file) => { // ✅ NEU: async hinzugefügt
 
   const createPDF = (a) => {
     const pdf = new jsPDF();
-    const baseDate = a.zeitErledigt ? new Date(a.zeitErledigt) : new Date();
-
+    
+    // --- 1. Datum & Dateinamen vorbereiten ---
+    const baseDate = a.zeitErledigt ? new Date(a.zeitErledigt) : (a.fehlanfahrt?.zeit ? new Date(a.fehlanfahrt.zeit) : new Date());
     const year = baseDate.getFullYear();
     const kw = getKW(baseDate);
-
     const tag = String(baseDate.getDate()).padStart(2, "0");
     const monat = String(baseDate.getMonth() + 1).padStart(2, "0");
     const datum = `${tag}-${monat}-${year}`;
 
+    // --- 2. Kopfzeile ---
     pdf.setFontSize(18);
-    pdf.text("AUFTRAGSBERICHT", 10, 20);
+    pdf.setFont("helvetica", "bold");
+    pdf.text("AUFTRAGSBERICHT", 15, 20);
+    pdf.setLineWidth(0.5);
+    pdf.line(15, 23, 195, 23); // Eine saubere Linie unter der Überschrift
 
+    let y = 33;
+
+    // --- 3. Auftragsdetails ---
+    pdf.setFontSize(12);
+    pdf.text("Auftragsdetails:", 15, y); y += 7;
+    
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(10);
+    pdf.text(`Auftragsnummer: ${a.nummer}`, 15, y); y += 5;
+    pdf.text(`Kunde / Adresse: ${a.strasse}, ${a.plzOrt}`, 15, y); y += 5;
+    pdf.text(`Material: ${a.material}`, 15, y); y += 5;
+    pdf.text(`Fahrer: ${a.fahrer}`, 15, y); y += 10;
+
+    // --- Hilfsfunktion für einheitliche Anfahrts-Blöcke ---
+    const drawVisitBlock = (title, time, gps, imageBase64, isAlert) => {
+      // Neuer Seitenumbruch, wenn der Platz für das Bild zu knapp wird
+      if (y > 230) { 
+        pdf.addPage();
+        y = 20;
+      }
+
+      // Titel (Rot bei Fehlanfahrt, Schwarz bei Erfolg)
+      pdf.setTextColor(isAlert ? 220 : 0, 0, 0); 
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(11);
+      pdf.text(title, 15, y); y += 6;
+
+      // Daten
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(10);
+      pdf.text(`Zeitpunkt: ${new Date(time).toLocaleString("de-DE")}`, 15, y); y += 5;
+
+      // GPS Link für die Dispo-PDF
+      if (gps && gps.lat) {
+        pdf.text(`GPS-Standort: ${gps.lat}, ${gps.lng}`, 15, y); y += 5;
+        pdf.setTextColor(0, 0, 255); // Blau für den Link
+        pdf.textWithLink("In Google Maps öffnen", 15, y, { url: `https://www.google.com/maps?q=$${gps.lat},${gps.lng}` });
+        pdf.setTextColor(0, 0, 0);
+        y += 7;
+      }
+
+      // Beweisfoto einfügen, falls vorhanden
+      if (imageBase64) {
+        try {
+          // Breite 60mm, Höhe 80mm
+          pdf.addImage(imageBase64, 15, y, 60, 80); 
+          y += 85;
+        } catch(e) {
+          pdf.text("[Bild konnte nicht geladen werden]", 15, y); y += 7;
+        }
+      }
+      
+      y += 3;
+      // Gestrichelte Trennlinie zeichnen
+      pdf.setLineDashPattern([2, 2], 0);
+      pdf.line(15, y, 100, y);
+      pdf.setLineDashPattern([], 0); // Strichmuster wieder zurücksetzen
+      y += 10;
+    };
+
+    // --- 4. Anfahrten chronologisch zeichnen ---
+    if (a.fehlanfahrt && a.fehlanfahrt.zeit) {
+      drawVisitBlock(
+        "1. ANFAHRT (Fehlanfahrt)", 
+        a.fehlanfahrt.zeit, 
+        a.fehlanfahrt.gps, 
+        a.fehlanfahrt.bild, 
+        true
+      );
+    }
+
+    if (a.status === "erledigt") {
+      const titel = a.zweiteAnfahrt ? "2. ANFAHRT (Erfolgreich erledigt)" : "ANFAHRT (Erfolgreich erledigt)";
+      drawVisitBlock(titel, a.zeitErledigt, a.gps, null, false);
+    }
+
+    // --- 5. Footer ---
+    pdf.setFontSize(8);
+    pdf.setTextColor(150, 150, 150);
+    pdf.text("Dieser Bericht wurde automatisch erstellt.", 105, 290, { align: "center" });
+
+    // Datei speichern
     pdf.save(`${year}_KW${kw}_${datum}_${a.nummer}.pdf`);
   };
 

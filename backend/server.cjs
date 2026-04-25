@@ -115,11 +115,10 @@ app.post("/auftraege", async (req, res) => {
 app.put("/auftraege/:id", async (req, res) => {
   try {
     const { lat, lng, fahrer, statusUpdate, bild } = req.body;
-
     const auftrag = await Auftrag.findById(req.params.id);
     if (!auftrag) return res.sendStatus(404);
 
-    // 1. Fahrer im Dropdown ändern
+    // 1. Fahrer-Zuweisung (Dispo)
     if (fahrer !== undefined) {
       auftrag.fahrer = fahrer;
       await auftrag.save();
@@ -127,16 +126,16 @@ app.put("/auftraege/:id", async (req, res) => {
       return res.json({ success: true });
     }
 
-    // 2. Dispo setzt Auftrag nach Fehlanfahrt wieder auf "offen"
+    // 2. Reset-Logik (Dispo schickt Fahrer erneut los)
     if (statusUpdate === "reset") {
       auftrag.status = "offen";
-      auftrag.zweiteAnfahrt = true; // ✅ Markieren für das PDF ("2. Anfahrt")
+      auftrag.zweiteAnfahrt = true;
       await auftrag.save();
       await updateClients();
       return res.json({ success: true });
     }
 
-    // 3. Status Logik (Fahrer klickt Erledigt oder Fehlanfahrt)
+    // 3. Status-Update (Fahrer-Aktion)
     const wirdErledigt = auftrag.status === "offen" && !statusUpdate;
     const wirdFehlanfahrt = statusUpdate === "fehlanfahrt";
 
@@ -148,7 +147,6 @@ app.put("/auftraege/:id", async (req, res) => {
     
     if (wirdFehlanfahrt) {
       auftrag.status = "fehlanfahrt";
-      // ✅ Daten der Fehlanfahrt wegspeichern (werden nicht überschrieben!)
       auftrag.fehlanfahrt = {
         zeit: new Date(),
         gps: { lat, lng },
@@ -156,7 +154,7 @@ app.put("/auftraege/:id", async (req, res) => {
       };
     }
 
-    // 4. PDF Generierung
+    // 4. PDF GENERIERUNG (Einheitliches Layout für beide Fälle)
     if (wirdErledigt || wirdFehlanfahrt) {
       const doc = new PDFDocument({ margin: 40 });
       const chunks = [];
@@ -164,72 +162,94 @@ app.put("/auftraege/:id", async (req, res) => {
 
       doc.on("end", async () => {
         const pdfBuffer = Buffer.concat(chunks);
-        const baseDate = auftrag.zeitErledigt || auftrag.fehlanfahrt.zeit;
-        const year = baseDate.getFullYear();
-        const kw = Math.ceil((((baseDate - new Date(year, 0, 1)) / 86400000) + 1) / 7);
-        const datum = `${String(baseDate.getDate()).padStart(2, "0")}-${String(baseDate.getMonth() + 1).padStart(2, "0")}-${year}`;
-        const fileName = `${year}_KW${kw}_${datum}_${auftrag.nummer}.pdf`;
+        const currentStatus = auftrag.status.toUpperCase();
+        const fileName = `Bericht_${auftrag.nummer}_${currentStatus}.pdf`;
 
         await transporter.sendMail({
           from: process.env.MAIL_USER,
           to: process.env.MAIL_TO,
-          subject: `${fileName} - ${auftrag.status.toUpperCase()}`,
-          text: "Auftragsbericht im Anhang",
+          subject: `Auftrag ${auftrag.nummer}: ${currentStatus}`,
+          text: `Anbei der detaillierte Bericht für Auftrag Nr. ${auftrag.nummer}.`,
           attachments: [{ filename: fileName, content: pdfBuffer }],
         });
       });
 
+      // --- PDF LAYOUT ---
+      // Header & Logo
       doc.fontSize(20).text("AUFTRAGSBERICHT", 40, 40);
-      doc.moveTo(40, 87).lineTo(550, 87).stroke();
+      const logoBase64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAX0AAAC1CAYAAACztS88..."; // Dein Logo-String
+      try {
+          doc.image(Buffer.from(logoBase64.split(",")[1], "base64"), 400, 30, { width: 150 });
+      } catch(e) {}
+      
+      doc.moveTo(40, 85).lineTo(550, 85).stroke();
 
       let y = 110;
-      
-      // ✅ Wenn es die zweite Anfahrt ist, roten Warntext drucken!
-      if (auftrag.zweiteAnfahrt) {
-        doc.fontSize(16).fillColor("red").text("ACHTUNG: 2. ANFAHRT", 40, y);
-        doc.fillColor("black");
-        y += 25;
-      }
 
-      doc.fontSize(12).font("Helvetica-Bold").text("Auftragsdaten:", 40, y); y += 20;
-      doc.font("Helvetica").text(`Nummer: ${auftrag.nummer}`, 40, y); y += 15;
-      doc.text(`Fahrer: ${auftrag.fahrer}`, 40, y); y += 15;
-      doc.text(`Material: ${auftrag.material}`, 40, y); y += 25;
+      // Sektion 1: Stammdaten
+      doc.fontSize(12).font("Helvetica-Bold").text("Auftragsdetails:", 40, y); y += 20;
+      doc.font("Helvetica").fontSize(10);
+      doc.text(`Auftragsnummer: ${auftrag.nummer}`, 40, y); y += 15;
+      doc.text(`Kunde / Adresse: ${auftrag.strasse}, ${auftrag.plzOrt}`, 40, y); y += 15;
+      doc.text(`Material: ${auftrag.material}`, 40, y); y += 15;
+      doc.text(`Fahrer: ${auftrag.fahrer}`, 40, y); y += 30;
 
-      doc.font("Helvetica-Bold").text("Adresse:", 40, y); y += 20;
-      doc.font("Helvetica").text(auftrag.strasse, 40, y); y += 15;
-      doc.text(auftrag.plzOrt, 40, y); y += 25;
-
-      // ✅ DATEN DER ERSTEN ANFAHRT (Fehlanfahrt)
-      if (auftrag.fehlanfahrt && auftrag.fehlanfahrt.zeit) {
-        doc.font("Helvetica-Bold").text("1. Versuch (Fehlanfahrt):", 40, y); y += 20;
-        doc.font("Helvetica").text(`Datum: ${new Date(auftrag.fehlanfahrt.zeit).toLocaleString("de-DE")}`, 40, y); y += 15;
-        if (auftrag.fehlanfahrt.gps?.lat) {
-          doc.text(`GPS: ${auftrag.fehlanfahrt.gps.lat}, ${auftrag.fehlanfahrt.gps.lng}`, 40, y); y += 25;
+      // Hilfsfunktion für einheitliche Anfahrts-Blöcke
+      const drawVisitBlock = (title, time, gps, imageBase64, isAlert = false) => {
+        if (isAlert) doc.fillColor("red").font("Helvetica-Bold");
+        else doc.fillColor("black").font("Helvetica-Bold");
+        
+        doc.fontSize(12).text(title, 40, y); y += 20;
+        doc.fillColor("black").font("Helvetica").fontSize(10);
+        
+        doc.text(`Zeitpunkt: ${new Date(time).toLocaleString("de-DE")}`, 40, y); y += 15;
+        
+        if (gps && gps.lat) {
+          doc.text(`GPS-Standort: ${gps.lat}, ${gps.lng}`, 40, y); y += 15;
+          doc.fillColor("blue").text("In Google Maps öffnen", 40, y, {
+            link: `https://www.google.com/maps?q=${gps.lat},${gps.lng}`,
+            underline: true
+          });
+          doc.fillColor("black"); y += 20;
         }
-        if (auftrag.fehlanfahrt.bild) {
+
+        if (imageBase64) {
           try {
-            doc.image(Buffer.from(auftrag.fehlanfahrt.bild.split(",")[1], "base64"), 40, y, { width: 200 });
-            y += 160;
-          } catch(e) { /* Bildfehler ignorieren */ }
+            doc.image(Buffer.from(imageBase64.split(",")[1], "base64"), 40, y, { width: 220 });
+            y += 180;
+          } catch(e) {
+            doc.text("[Bild konnte nicht geladen werden]", 40, y); y += 20;
+          }
         }
+        y += 10;
+        doc.moveTo(40, y).lineTo(300, y).dash(5, {space: 10}).stroke().undash();
+        y += 25;
+      };
+
+      // --- ANFAHRTEN DARSTELLEN ---
+      
+      // 1. ANFAHRT (Falls jemals eine Fehlanfahrt stattfand)
+      if (auftrag.fehlanfahrt && auftrag.fehlanfahrt.zeit) {
+        drawVisitBlock(
+          "1. ANFAHRT (Fehlanfahrt)", 
+          auftrag.fehlanfahrt.zeit, 
+          auftrag.fehlanfahrt.gps, 
+          auftrag.fehlanfahrt.bild,
+          true // Rot markieren, da Fehler
+        );
       }
 
-      // ✅ DATEN DER ZWEITEN ANFAHRT (Erledigt)
+      // 2. ANFAHRT / AKTUELLES ERGEBNIS
       if (auftrag.status === "erledigt") {
-        doc.font("Helvetica-Bold").text(auftrag.zweiteAnfahrt ? "2. Versuch (Erledigt):" : "Status (Erledigt):", 40, y); y += 20;
-        doc.font("Helvetica").text(`Datum: ${new Date(auftrag.zeitErledigt).toLocaleString("de-DE")}`, 40, y); y += 15;
-        if (auftrag.gps?.lat) {
-          doc.fillColor("blue").text(
-            `GPS Link öffnen (Klick)`, 
-            40, y, { link: `https://www.google.com/maps?q=$$${auftrag.gps.lat},${auftrag.gps.lng}` }
-          );
-          doc.fillColor("black");
-        }
+        const titel = auftrag.zweiteAnfahrt ? "2. ANFAHRT (Erfolgreich erledigt)" : "ANFAHRT (Erfolgreich erledigt)";
+        drawVisitBlock(titel, auftrag.zeitErledigt, auftrag.gps, null, false);
+      } else if (auftrag.status === "fehlanfahrt" && !auftrag.zweiteAnfahrt) {
+          // Falls wir gerade erst die erste Fehlanfahrt melden und noch kein Reset war
+          // (Der Block wurde oben bereits durch die Prüfung 'auftrag.fehlanfahrt' gezeichnet)
       }
 
-      doc.moveTo(40, 700).lineTo(550, 700).stroke();
-      doc.fontSize(9).text("Automatisch erstellt – Reklamations App", 40, 710, { align: "center" });
+      // Footer
+      doc.fontSize(8).fillColor("gray").text("Dieser Bericht wurde automatisch erstellt.", 40, 720, { align: "center" });
       doc.end();
     }
 
