@@ -4,7 +4,7 @@ import { io } from "socket.io-client";
 
 const API = "https://reklamation-backend.onrender.com";
 
-// Robuste Socket-Verbindung (verhindert Verbindungsabbrüche auf Render)
+// Robuste Socket-Verbindung
 const socket = io(API, {
   transports: ["websocket", "polling"],
   reconnection: true,
@@ -260,7 +260,7 @@ function App() {
     pdf.setFont("helvetica", "bold");
     pdf.text("AUFTRAGSBERICHT", 15, 20);
 
-    const logoBase64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAX0AAAC1CAYAAACztS88..."; // ERSETZEN DURCH DEIN LOGO
+    const logoBase64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAX0AAAC1CAYAAACztS88..."; // ✅ ERSETZEN DURCH DEIN LOGO
     try {
       pdf.addImage(logoBase64, "PNG", 140, 10, 55, 15);
     } catch (e) {
@@ -300,7 +300,7 @@ function App() {
       if (gps && gps.lat) {
         pdf.text(`GPS-Standort: ${gps.lat}, ${gps.lng}`, 15, y); y += 5;
         pdf.setTextColor(0, 0, 255);
-        pdf.textWithLink("In Google Maps öffnen", 15, y, { url: `https://www.google.com/maps/search/?api=1&query=${gps.lat},${gps.lng}` });
+        pdf.textWithLink("In Google Maps öffnen", 15, y, { url: `https://maps.google.com/?q=${gps.lat},${gps.lng}` });
         pdf.setTextColor(0, 0, 0);
         y += 7;
       }
@@ -391,7 +391,6 @@ function App() {
     }
   };
 
-  // ✅ KORREKT PLATZIERTER ALARM-TRIGGER
   useEffect(() => {
     if (isFahrer && meine.length > prevMeineLength.current) {
       console.log("🔔 Neuer Auftrag erkannt! Spiele Ton ab...");
@@ -444,9 +443,8 @@ function App() {
               {a.plzOrt}<br />
               📦 {a.material}<br />
 
-              {/* ✅ Gofixter Maps-Link */}
               <a
-                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(a.strasse + ", " + a.plzOrt)}`}
+                href={`https://maps.google.com/?q=${encodeURIComponent(a.strasse + ", " + a.plzOrt)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{
@@ -474,13 +472,13 @@ function App() {
                 />
                 <button
                   onClick={() => document.getElementById(`kamera-${a._id}`).click()}
-                  style={{ padding: "8px 12px", background: "orange", color: "white", flex: 1 }}
+                  style={{ padding: "8px 12px", background: "orange", color: "white", flex: 1, border: "none", borderRadius: 5 }}
                 >
                   📷 Keine Tonne
                 </button>
                 <button
                   onClick={() => toggleStatus(a._id)}
-                  style={{ padding: "8px 12px", background: "green", color: "white", flex: 1 }}
+                  style={{ padding: "8px 12px", background: "green", color: "white", flex: 1, border: "none", borderRadius: 5 }}
                 >
                   ✅ Erledigt
                 </button>
@@ -529,7 +527,7 @@ function App() {
               <option>Ali</option>
             </select>
 
-            <button onClick={addAuftrag} style={{ width: "100%", padding: 12, fontSize: 16 }}>
+            <button onClick={addAuftrag} style={{ width: "100%", padding: 12, fontSize: 16, border: "none", borderRadius: 5, background: "#007bff", color: "white" }}>
               ➕ Auftrag erstellen
             </button>
           </div>
@@ -563,10 +561,9 @@ function App() {
               <div style={{ marginTop: 5 }}>📍 {a.strasse}<br />{a.plzOrt}</div>
               <div style={{ marginTop: 8, fontWeight: "bold", color: a.status === "erledigt" ? "green" : "red" }}>{a.status.toUpperCase()}</div>
 
-              {/* ✅ Gefixter GPS-Link für die Dispo */}
               {a.gps?.lat && (
                 <a
-                  href={`https://www.google.com/maps/search/?api=1&query=${a.gps.lat},${a.gps.lng}`}
+                  href={`https://maps.google.com/?q=${a.gps.lat},${a.gps.lng}`}
                   target="_blank"
                   rel="noreferrer"
                   style={{ display: "inline-block", marginTop: 8 }}
@@ -575,7 +572,6 @@ function App() {
                 </a>
               )}
 
-              {/* ✅ SAUBERES LAYOUT FÜR FEHLANFAHRT & BUTTONS */}
               {a.status === "fehlanfahrt" && (
                 <div style={{ marginTop: 15, padding: 10, background: "#fff3f3", border: "1px solid red", borderRadius: 8 }}>
                   <strong style={{ color: "red", fontSize: 16 }}>⚠️ Fehlanfahrt gemeldet</strong>
@@ -596,7 +592,7 @@ function App() {
               )}
 
               <div style={{ display: "flex", gap: 10, marginTop: 15 }}>
-                <button onClick={() => createPDF(a)} style={{ flex: 1, padding: 10 }}>📄 PDF</button>
+                <button onClick={() => createPDF(a)} style={{ flex: 1, padding: 10, border: "none", borderRadius: 5, background: "#eee" }}>📄 PDF</button>
                 <button onClick={() => deleteAuftrag(a._id)} style={{ flex: 1, padding: 10, background: "#ff4d4d", color: "white", border: "none", borderRadius: 5 }}>🗑 Löschen</button>
               </div>
 
