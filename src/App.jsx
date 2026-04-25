@@ -840,19 +840,18 @@ const handleFehlanfahrt = async (id, file) => { // ✅ NEU: async hinzugefügt
               justifyContent: "center",
               overflow: "hidden"
           }}>
-
-    <img 
-      src={a.fehlanfahrt.bild} 
-      alt="Beweis" 
-      style={{ 
-        maxWidth: "100%", 
-        maxHeight: "100%", 
-        objectFit: "contain", // ✅ DAS WICHTIGSTE: Bild behält Form und wird eingepasst
-        display: "block"
-      }} 
-    />
-  </div>
-)}
+            <img 
+              src={a.fehlanfahrt.bild} 
+              alt="Beweis" 
+              style={{ 
+                maxWidth: "100%", 
+                maxHeight: "100%", 
+                objectFit: "contain", // Bild behält Form und wird eingepasst
+                display: "block"
+              }} 
+            />
+          </div>
+        )}
 
             {/* Button um den Auftrag wieder zum Fahrer zu schicken */}
             <button 
@@ -874,13 +873,28 @@ const handleFehlanfahrt = async (id, file) => { // ✅ NEU: async hinzugefügt
         )}
         {/* ========================================= */}
 
+        {/* BUTTONS (PDF & Löschen nebeneinander UNTER dem Bild) */}
+        <div style={{
+          display: "flex",
+          gap: 10,
+          marginTop: 15 // Etwas mehr Abstand nach oben
+        }}>
+          <button
+            onClick={() => createPDF(a)}
+            style={{ flex: 1, padding: 10 }}
+          >
+            📄 PDF
+          </button>
+
           <button
             onClick={() => deleteAuftrag(a._id)}
             style={{
               flex: 1,
               padding: 10,
               background: "#ff4d4d",
-              color: "white"
+              color: "white",
+              border: "none", // Sieht moderner aus
+              borderRadius: 5
             }}
           >
             🗑 Löschen
