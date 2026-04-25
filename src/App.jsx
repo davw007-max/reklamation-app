@@ -646,32 +646,50 @@ const handleFehlanfahrt = async (id, file) => { // ✅ NEU: async hinzugefügt
 
     {/* ================= AUFTRAGSFILTER ================= */}
     <div style={{ marginBottom: 15 }}>
-  <button onClick={() => setFilter("offen")} style={{
-    marginRight: 10,
-    background: filter === "offen" ? "#007bff" : "#ccc",
-    color: "white",
-    padding: 8
-  }}>
-    🔴 Offen
-  </button>
+      <button onClick={() => setFilter("offen")} style={{
+        marginRight: 10,
+        background: filter === "offen" ? "#007bff" : "#ccc",
+        color: "white",
+        padding: 8,
+        border: "none",
+        borderRadius: 5
+      }}>
+        🔴 Offen
+      </button>
 
-  <button onClick={() => setFilter("erledigt")} style={{
-    marginRight: 10,
-    background: filter === "erledigt" ? "green" : "#ccc",
-    color: "white",
-    padding: 8
-  }}>
-    🟢 Erledigt
-  </button>
+      <button onClick={() => setFilter("erledigt")} style={{
+        marginRight: 10,
+        background: filter === "erledigt" ? "green" : "#ccc",
+        color: "white",
+        padding: 8,
+        border: "none",
+        borderRadius: 5
+      }}>
+        🟢 Erledigt
+      </button>
 
-  <button onClick={() => setFilter("alle")} style={{
-    background: filter === "alle" ? "#444" : "#ccc",
-    color: "white",
-    padding: 8
-  }}>
-    📋 Alle
-  </button>
-</div>
+      {/* ✅ NEU: Fehlanfahrt Filter-Button */}
+      <button onClick={() => setFilter("fehlanfahrt")} style={{
+        marginRight: 10,
+        background: filter === "fehlanfahrt" ? "orange" : "#ccc",
+        color: "white",
+        padding: 8,
+        border: "none",
+        borderRadius: 5
+      }}>
+        ⚠️ Fehlanfahrten
+      </button>
+
+      <button onClick={() => setFilter("alle")} style={{
+        background: filter === "alle" ? "#444" : "#ccc",
+        color: "white",
+        padding: 8,
+        border: "none",
+        borderRadius: 5
+      }}>
+        📋 Alle
+      </button>
+    </div>
 
     {/* ================= AUFTRÄGE ================= */}
     <h3>🚛 Aufträge</h3>
