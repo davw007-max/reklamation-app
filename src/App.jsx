@@ -6,7 +6,12 @@ import { io } from "socket.io-client";
 const API = "https://reklamation-backend.onrender.com";
 
 // ✅ NEU: Verbindung zum Backend herstellen
-const socket = io(API);
+// ✅ NEU: Robuste Socket-Verbindung (verhindert Verbindungsabbrüche auf Render)
+const socket = io(API, { 
+  transports: ["websocket", "polling"],
+  reconnection: true, // Automatischer Reconnect
+  reconnectionDelay: 1000 // Versucht es jede Sekunde neu
+});
 
 const materialListe = [
   "kom. Restmüll",
@@ -40,20 +45,33 @@ function App() {
   const isFahrer = user && user !== "Dispo";
 
   // ==========================================
-  // ✅ NEU: Der Echtzeit-Listener
+  // ✅ NEU: Der Echtzeit-Listener (STABIL)
   // ==========================================
   useEffect(() => {
-    // Falls die Socket-Verbindung kurz braucht, laden wir einmalig klassisch
+    // 1. Einmalig laden beim Start
     loadData(); 
 
-    // Lauscht auf das Event "auftraege" aus deinem server.cjs
-    socket.on("auftraege", (neueDaten) => {
+    // 2. Das passiert, wenn das Backend ein Live-Update schickt
+    const handleUpdate = (neueDaten) => {
+      console.log("⚡ Live-Update empfangen:", neueDaten);
       setAuftraege(neueDaten);
+    };
+
+    // 3. Lauschen auf Live-Updates
+    socket.on("auftraege", handleUpdate);
+
+    // 4. DER TRICK: Wenn der Browser-Tab aufwacht oder sich neu verbindet, 
+    // holen wir zur Sicherheit einmal alle Daten frisch ab, 
+    // damit nichts fehlt, was im "Schlafmodus" passiert ist!
+    socket.on("connect", () => {
+      console.log("🔌 Socket (neu) verbunden!");
+      loadData();
     });
 
-    // WICHTIG: Aufräumen, wenn die App geschlossen wird
+    // Aufräumen beim Schließen
     return () => {
-      socket.off("auftraege");
+      socket.off("auftraege", handleUpdate);
+      socket.off("connect");
     };
   }, []);
   // ==========================================
