@@ -270,9 +270,9 @@ function App() {
     }
 
     pdf.setLineWidth(0.5);
-    pdf.line(15, 28, 195, 28);
+    pdf.line(15, 42, 195, 42);
 
-    let y = 38;
+    let y = 52;
     pdf.setFontSize(12);
     pdf.text("Auftragsdetails:", 15, y); y += 7;
 

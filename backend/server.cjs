@@ -275,9 +275,9 @@ app.put("/auftraege/:id", async (req, res) => {
         console.log("Fehler beim Logo-Druck im Backend", e);
       }
       
-      doc.moveTo(40, 85).lineTo(550, 85).stroke();
+      doc.moveTo(40, 110).lineTo(550, 110).stroke();
 
-      let y = 110;
+      let y = 130;
 
       // Sektion 1: Stammdaten
       doc.fontSize(12).font("Helvetica-Bold").text("Auftragsdetails:", 40, y); y += 20;
