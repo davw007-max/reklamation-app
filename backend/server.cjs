@@ -80,47 +80,45 @@ app.post("/login", (req, res) => {
   res.status(401).json({ success: false });
 });
 
-// ================= DEMO DATEN FÜR PRÄSENTATION =================
+// ================= DEMO DATEN: MAIN-TAUBER-KREIS =================
 app.post("/demo-daten", async (req, res) => {
   try {
-    // 1. Board leeren
     await Auftrag.deleteMany({});
 
     const jetzt = new Date();
     const vorEinerStunde = new Date(jetzt.getTime() - 60 * 60 * 1000);
     const vorZweiStunden = new Date(jetzt.getTime() - 2 * 60 * 60 * 1000);
 
-    // 2. Die 5 Demo-Szenarien
     const demoAuftraege = [
       {
-        nummer: "R-8001", strasse: "Hauptstraße 45", plzOrt: "97922 Lauda-Königshofen",
+        nummer: "R-1001", strasse: "Untere Gasse 12", plzOrt: "97922 Lauda-Königshofen",
         material: "kom. Restmüll", fahrer: "Max", status: "offen",
         zeit: jetzt.toLocaleString("de-DE")
       },
       {
-        nummer: "R-8002", strasse: "Gewerbestraße 12", plzOrt: "97922 Lauda",
-        material: "Kartonage", fahrer: "", status: "offen", // Ohne Fahrer zum Vorführen!
+        nummer: "R-1002", strasse: "Marktplatz 1", plzOrt: "97941 Tauberbischofsheim",
+        material: "Kartonage", fahrer: "", status: "offen", // Zum Zuweisen üben!
         zeit: jetzt.toLocaleString("de-DE")
       },
       {
-        nummer: "R-8003", strasse: "Schulweg 7", plzOrt: "97922 Königshofen",
+        nummer: "R-1003", strasse: "Herrenwiesenstraße 5", plzOrt: "97980 Bad Mergentheim",
         material: "LVP", fahrer: "Tom", status: "erledigt",
         zeit: vorZweiStunden.toLocaleString("de-DE"),
         zeitErledigt: vorEinerStunde,
-        gps: { lat: 49.5704, lng: 9.7021 }
+        gps: { lat: 49.4912, lng: 9.7731 } // Bad Mergentheim
       },
       {
-        nummer: "R-8004", strasse: "Industriepark 99", plzOrt: "97922 Lauda",
+        nummer: "R-1004", strasse: "Bahnhofstraße 22", plzOrt: "97877 Wertheim",
         material: "Abrufleerung", fahrer: "Ali", status: "fehlanfahrt",
         zeit: vorZweiStunden.toLocaleString("de-DE"),
         fehlanfahrt: {
           zeit: vorEinerStunde,
-          gps: { lat: 49.5645, lng: 9.7055 },
+          gps: { lat: 49.7584, lng: 9.5176 }, // Wertheim
           bild: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=" 
         }
       },
       {
-        nummer: "R-8005", strasse: "Am Sportplatz 1", plzOrt: "97922 Lauda",
+        nummer: "R-1005", strasse: "Schlossallee 1", plzOrt: "97990 Weikersheim",
         material: "kom. Restmüll", fahrer: "Max", status: "offen",
         zeit: jetzt.toLocaleString("de-DE")
       }
@@ -132,7 +130,7 @@ app.post("/demo-daten", async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     console.error("❌ Demo-Fehler:", err);
-    res.status(500).json({ error: "Fehler beim Laden" });
+    res.status(500).json({ error: "Fehler beim Laden der TBB-Daten" });
   }
 });
 
