@@ -578,9 +578,27 @@ if (a.status === "erledigt") {
                   </div>
                   
                   <div style={{ margin: "10px 0" }}>
-                    📍 {a.strasse}, {a.plzOrt}<br/>
-                    👤 Fahrer: <strong>{a.fahrer || "Nicht zugewiesen"}</strong>
-                  </div>
+                    📍 {a.strasse}, {a.plzOrt}<br/>
+                    👤 Fahrer: 
+                    <select 
+                      value={a.fahrer || ""} 
+                      onChange={(e) => updateFahrer(a._id, e.target.value)}
+                      style={{ 
+                        marginLeft: "10px", 
+                        padding: "5px", 
+                        borderRadius: "5px", 
+                        border: "1px solid #ccc",
+                        background: "#fff",
+                        fontSize: "14px",
+                        cursor: "pointer"
+                      }}
+                    >
+                      <option value="">-- Nicht zugewiesen --</option>
+                      <option>Max</option>
+                      <option>Tom</option>
+                      <option>Ali</option>
+                    </select>
+                  </div>
 
                   {a.status === "fehlanfahrt" && a.fehlanfahrt?.bild && (
                     <div style={{ marginTop: 10, background: "#fff3f3", padding: 10, borderRadius: 8, border: "1px solid #ffcccc" }}>
