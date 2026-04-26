@@ -535,11 +535,47 @@ function App() {
           </div>
 
           {/* FILTER */}
-          <div style={{ marginBottom: 15 }}>
-            <button onClick={() => setFilter("offen")} style={{ marginRight: 10, background: filter === "offen" ? "#007bff" : "#ccc", color: "white", padding: 8, border: "none", borderRadius: 5 }}>🔴 Offen</button>
-            <button onClick={() => setFilter("erledigt")} style={{ marginRight: 10, background: filter === "erledigt" ? "green" : "#ccc", color: "white", padding: 8, border: "none", borderRadius: 5 }}>🟢 Erledigt</button>
-            <button onClick={() => setFilter("fehlanfahrt")} style={{ marginRight: 10, background: filter === "fehlanfahrt" ? "orange" : "#ccc", color: "white", padding: 8, border: "none", borderRadius: 5 }}>⚠️ Fehlanfahrten</button>
-            <button onClick={() => setFilter("alle")} style={{ background: filter === "alle" ? "#444" : "#ccc", color: "white", padding: 8, border: "none", borderRadius: 5 }}>📋 Alle</button>
+          <div style={{ 
+            marginBottom: 25, 
+            display: "flex", 
+            flexWrap: "wrap", 
+            gap: "10px",
+            padding: "10px",
+            background: "#f0f0f0",
+            borderRadius: "12px"
+          }}>
+            {[
+              { id: "offen", label: "🔴 Offen", color: "#d9534f" },
+              { id: "erledigt", label: "🟢 Erledigt", color: "#28a745" },
+              { id: "fehlanfahrt", label: "⚠️ Fehlanfahrten", color: "#f0ad4e" },
+              { id: "alle", label: "📋 Alle", color: "#333" }
+            ].map((btn) => (
+              <button
+                key={btn.id}
+                onClick={() => setFilter(btn.id)}
+                style={{
+                  flex: "1 1 auto",
+                  minWidth: "120px",
+                  padding: "12px 15px",
+                  fontSize: "14px",
+                  fontWeight: "bold",
+                  cursor: "pointer",
+                  border: "none",
+                  borderRadius: "8px",
+                  transition: "all 0.2s ease",
+                  // Hier passiert die Magie der Lesbarkeit:
+                  background: filter === btn.id ? btn.color : "#fff",
+                  color: filter === btn.id ? "#fff" : "#333",
+                  boxShadow: filter === btn.id 
+                    ? "0 4px 8px rgba(0,0,0,0.3)" 
+                    : "0 2px 4px rgba(0,0,0,0.1)",
+                  transform: filter === btn.id ? "scale(1.05)" : "scale(1)",
+                  borderBottom: filter === btn.id ? "none" : `3px solid ${btn.color}`
+                }}
+              >
+                {btn.label}
+              </button>
+            ))}
           </div>
 
           {/* AUFTRÄGE LISTE */}
