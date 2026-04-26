@@ -260,7 +260,7 @@ function App() {
     pdf.setFont("helvetica", "bold");
     pdf.text("AUFTRAGSBERICHT", 15, 20);
 
-    const logoBase64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAX0AAAC1CAYAAACztS88..."; // ✅ ERSETZEN DURCH DEIN LOGO
+    const logoBase64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAX0AAAC1CAYAAACztS88AAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyRpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw"; // ✅ ERSETZEN DURCH DEIN LOGO
     try {
       pdf.addImage(logoBase64, "PNG", 140, 10, 55, 15);
     } catch (e) {

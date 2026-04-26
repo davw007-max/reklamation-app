@@ -264,7 +264,7 @@ app.put("/auftraege/:id", async (req, res) => {
       
       // ✅ DEIN FIRMENLOGO (Oben Rechts)
       // WICHTIG: Füge hier deinen echten, langen Base64-String ein!
-      const logoBase64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAX0AAAC1CAYAAACztS88..."; 
+      const logoBase64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAX0AAAC1CAYAAACztS88AAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyRpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw"; 
       
       try {
         // x: 400 (schiebt es nach rechts), y: 25 (schiebt es nach oben), width: 140 (Größe)
