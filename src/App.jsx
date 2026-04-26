@@ -491,155 +491,109 @@ function App() {
       )}
 
       {/* DISPO ANSICHT */}
-      {user && isDispo && (
-        <>
-          <button onClick={logout} style={{ width: "100%", padding: 12, marginBottom: 20, fontSize: 16 }}>
-            🚪 Logout
-          </button>
+      {/* DISPO ANSICHT - OPTIMIERT FÜR KARLSRUHE */}
+      {user && isDispo && (
+        <div style={{ maxWidth: "1200px", margin: "0 auto", fontFamily: "sans-serif" }}>
+          
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, background: "#fff", padding: "15px", borderRadius: "10px", boxShadow: "0 2px 5px rgba(0,0,0,0.1)" }}>
+            <h2 style={{ margin: 0 }}>📋 Dispositions-Zentrale</h2>
+            <button onClick={logout} style={{ padding: "8px 15px", borderRadius: "5px", border: "1px solid #ccc", cursor: "pointer" }}>🚪 Logout</button>
+          </div>
 
-          <h2>📋 Disposition</h2>
+          <div style={{ display: "grid", gridTemplateColumns: window.innerWidth > 800 ? "350px 1fr" : "1fr", gap: "25px" }}>
+            
+            {/* LINKE SPALTE: FORMULAR */}
+            <div>
+              <button
+                onClick={ladeDemoDaten}
+                style={{ width: "100%", padding: 15, marginBottom: 20, fontWeight: "bold", background: "#6f42c1", color: "white", border: "none", borderRadius: 8, cursor: "pointer" }}
+              >
+                🪄 Demo-Board laden
+              </button>
 
-          <button
-            onClick={ladeDemoDaten}
-            style={{
-              width: "100%", padding: 12, marginBottom: 20, fontSize: 16, fontWeight: "bold",
-              background: "#6f42c1", color: "white", border: "none", borderRadius: 8,
-              boxShadow: "0 4px 6px rgba(0,0,0,0.1)", cursor: "pointer"
-            }}
-          >
-            🪄 Demo-Board für Präsentation laden
-          </button>
+              <div style={{ background: "#f9f9f9", padding: 20, borderRadius: 12, border: "1px solid #ddd" }}>
+                <h3 style={{ marginTop: 0 }}>➕ Neuer Auftrag</h3>
+                <input placeholder="Nr" value={form.nummer} onChange={(e) => setForm({ ...form, nummer: e.target.value })} style={{ width: "93%", padding: "10px", marginBottom: 10, borderRadius: "5px", border: "1px solid #ccc" }} />
+                <input placeholder="Straße" value={form.strasse} onChange={(e) => setForm({ ...form, strasse: e.target.value })} style={{ width: "93%", padding: "10px", marginBottom: 10, borderRadius: "5px", border: "1px solid #ccc" }} />
+                <input placeholder="Ort" value={form.plzOrt} onChange={(e) => setForm({ ...form, plzOrt: e.target.value })} style={{ width: "93%", padding: "10px", marginBottom: 10, borderRadius: "5px", border: "1px solid #ccc" }} />
+                
+                <select value={form.material} onChange={(e) => setForm({ ...form, material: e.target.value })} style={{ width: "100%", padding: "10px", marginBottom: 10, borderRadius: "5px", border: "1px solid #ccc" }}>
+                  <option value="">Material wählen</option>
+                  {materialListe.map((m, i) => (<option key={i} value={m}>{m}</option>))}
+                </select>
 
-          {/* NEUER AUFTRAG */}
-          <div style={{ border: "2px solid #ccc", padding: 15, borderRadius: 10, marginBottom: 20, background: "#f9f9f9" }}>
-            <h3>➕ Neuer Auftrag</h3>
-            <input placeholder="Nr" value={form.nummer} onChange={(e) => setForm({ ...form, nummer: e.target.value })} style={{ width: "100%", marginBottom: 8 }} />
-            <input placeholder="Straße" value={form.strasse} onChange={(e) => setForm({ ...form, strasse: e.target.value })} style={{ width: "100%", marginBottom: 8 }} />
-            <input placeholder="Ort" value={form.plzOrt} onChange={(e) => setForm({ ...form, plzOrt: e.target.value })} style={{ width: "100%", marginBottom: 8 }} />
-            
-            <select value={form.material} onChange={(e) => setForm({ ...form, material: e.target.value })} style={{ width: "100%", marginBottom: 8 }}>
-              <option value="">Material wählen</option>
-              {materialListe.map((m, i) => (<option key={i} value={m}>{m}</option>))}
-            </select>
+                <select value={form.fahrer} onChange={(e) => setForm({ ...form, fahrer: e.target.value })} style={{ width: "100%", padding: "10px", marginBottom: 15, borderRadius: "5px", border: "1px solid #ccc" }}>
+                  <option value="">Fahrer wählen</option>
+                  <option>Max</option><option>Tom</option><option>Ali</option>
+                </select>
 
-            <select value={form.fahrer} onChange={(e) => setForm({ ...form, fahrer: e.target.value })} style={{ width: "100%", marginBottom: 10 }}>
-              <option value="">Fahrer</option>
-              <option>Max</option>
-              <option>Tom</option>
-              <option>Ali</option>
-            </select>
+                <button onClick={addAuftrag} style={{ width: "100%", padding: 12, fontSize: 16, border: "none", borderRadius: 5, background: "#007bff", color: "white", fontWeight: "bold", cursor: "pointer" }}>
+                  ➕ Auftrag erstellen
+                </button>
+              </div>
+            </div>
 
-            <button onClick={addAuftrag} style={{ width: "100%", padding: 12, fontSize: 16, border: "none", borderRadius: 5, background: "#007bff", color: "white" }}>
-              ➕ Auftrag erstellen
-            </button>
-          </div>
+            {/* RECHTE SPALTE: LISTE */}
+            <div>
+              {/* FILTER BUTTONS */}
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginBottom: 20, background: "#eee", padding: "10px", borderRadius: "10px" }}>
+                {[
+                  { id: "offen", label: "🔴 Offen", color: "#d9534f" },
+                  { id: "erledigt", label: "🟢 Erledigt", color: "#28a745" },
+                  { id: "fehlanfahrt", label: "⚠️ Fehlanfahrten", color: "#f0ad4e" },
+                  { id: "alle", label: "📋 Alle", color: "#333" }
+                ].map((btn) => (
+                  <button
+                    key={btn.id}
+                    onClick={() => setFilter(btn.id)}
+                    style={{
+                      flex: "1", minWidth: "100px", padding: "10px", borderRadius: "8px", border: "none", cursor: "pointer",
+                      background: filter === btn.id ? btn.color : "#fff",
+                      color: filter === btn.id ? "#fff" : "#333",
+                      fontWeight: "bold", boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
+                    }}
+                  >
+                    {btn.label}
+                  </button>
+                ))}
+              </div>
 
-          {/* FILTER */}
-          <div style={{ 
-            marginBottom: 25, 
-            display: "flex", 
-            flexWrap: "wrap", 
-            gap: "10px",
-            padding: "10px",
-            background: "#f0f0f0",
-            borderRadius: "12px"
-          }}>
-            {[
-              { id: "offen", label: "🔴 Offen", color: "#d9534f" },
-              { id: "erledigt", label: "🟢 Erledigt", color: "#28a745" },
-              { id: "fehlanfahrt", label: "⚠️ Fehlanfahrten", color: "#f0ad4e" },
-              { id: "alle", label: "📋 Alle", color: "#333" }
-            ].map((btn) => (
-              <button
-                key={btn.id}
-                onClick={() => setFilter(btn.id)}
-                style={{
-                  flex: "1 1 auto",
-                  minWidth: "120px",
-                  padding: "12px 15px",
-                  fontSize: "14px",
-                  fontWeight: "bold",
-                  cursor: "pointer",
-                  border: "none",
-                  borderRadius: "8px",
-                  transition: "all 0.2s ease",
-                  // Hier passiert die Magie der Lesbarkeit:
-                  background: filter === btn.id ? btn.color : "#fff",
-                  color: filter === btn.id ? "#fff" : "#333",
-                  boxShadow: filter === btn.id 
-                    ? "0 4px 8px rgba(0,0,0,0.3)" 
-                    : "0 2px 4px rgba(0,0,0,0.1)",
-                  transform: filter === btn.id ? "scale(1.05)" : "scale(1)",
-                  borderBottom: filter === btn.id ? "none" : `3px solid ${btn.color}`
-                }}
-              >
-                {btn.label}
-              </button>
-            ))}
-          </div>
+              {/* AUFTRAGS-KARTEN */}
+              {gefilterteAuftraege.map((a) => (
+                <div key={a._id} style={{ 
+                  background: "#fff", borderLeft: `8px solid ${a.status === "erledigt" ? "#28a745" : (a.status === "fehlanfahrt" ? "#f0ad4e" : "#d9534f")}`,
+                  padding: "15px", marginBottom: "15px", borderRadius: "10px", boxShadow: "0 2px 8px rgba(0,0,0,0.1)" 
+                }}>
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span style={{ fontSize: "18px", fontWeight: "bold" }}>#{a.nummer}</span>
+                    <span style={{ fontWeight: "bold", color: "#666" }}>{a.material}</span>
+                  </div>
+                  
+                  <div style={{ margin: "10px 0" }}>
+                    📍 {a.strasse}, {a.plzOrt}<br/>
+                    👤 Fahrer: <strong>{a.fahrer || "Nicht zugewiesen"}</strong>
+                  </div>
 
-          {/* AUFTRÄGE LISTE */}
-          <h3>🚛 Aufträge</h3>
+                  {a.status === "fehlanfahrt" && a.fehlanfahrt?.bild && (
+                    <div style={{ marginTop: 10, background: "#fff3f3", padding: 10, borderRadius: 8, border: "1px solid #ffcccc" }}>
+                      <div style={{ color: "red", fontWeight: "bold", marginBottom: 5 }}>⚠️ BEWEISFOTO:</div>
+                      <img src={a.fehlanfahrt.bild} style={{ width: "100%", maxHeight: "200px", objectFit: "contain", borderRadius: 5 }} alt="Beweis" />
+                      <button onClick={() => resetAuftrag(a._id)} style={{ width: "100%", marginTop: 10, padding: 8, background: "orange", color: "white", border: "none", borderRadius: 5, cursor: "pointer" }}>🔄 Neu anfahren lassen</button>
+                    </div>
+                  )}
 
-          {gefilterteAuftraege.map((a) => (
-            <div key={a._id} style={{ border: "2px solid #ddd", borderRadius: 12, padding: 15, marginBottom: 15, background: "#fff", boxShadow: "0 2px 6px rgba(0,0,0,0.1)" }}>
-              <div style={{ fontSize: 18, fontWeight: "bold" }}>#{a.nummer}</div>
-
-              <div style={{ marginTop: 5, marginBottom: 5 }}>
-                👤 Fahrer:
-                <select value={a.fahrer || ""} onChange={(e) => updateFahrer(a._id, e.target.value)} style={{ marginLeft: 10, padding: "4px", borderRadius: "5px" }}>
-                  <option value="">-- Nicht zugewiesen --</option>
-                  <option>Max</option>
-                  <option>Tom</option>
-                  <option>Ali</option>
-                </select>
-              </div>
-
-              <div>📦 Material: {a.material}</div>
-              <div style={{ marginTop: 5 }}>📍 {a.strasse}<br />{a.plzOrt}</div>
-              <div style={{ marginTop: 8, fontWeight: "bold", color: a.status === "erledigt" ? "green" : "red" }}>{a.status.toUpperCase()}</div>
-
-              {a.gps?.lat && (
-                <a
-                  href={`https://maps.google.com/?q=${a.gps.lat},${a.gps.lng}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{ display: "inline-block", marginTop: 8 }}
-                >
-                  📍 Standort öffnen
-                </a>
-              )}
-
-              {a.status === "fehlanfahrt" && (
-                <div style={{ marginTop: 15, padding: 10, background: "#fff3f3", border: "1px solid red", borderRadius: 8 }}>
-                  <strong style={{ color: "red", fontSize: 16 }}>⚠️ Fehlanfahrt gemeldet</strong>
-                  
-                  {a.fehlanfahrt?.bild && (
-                    <div style={{ width: "100%", height: "350px", background: "#f0f0f0", marginTop: 10, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
-                      <img src={a.fehlanfahrt.bild} alt="Beweis" style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain", display: "block" }} />
-                    </div>
-                  )}
-
-                  <button 
-                    onClick={() => resetAuftrag(a._id)}
-                    style={{ width: "100%", padding: "10px", marginTop: 10, background: "orange", color: "white", fontWeight: "bold", border: "none", borderRadius: 5 }}
-                  >
-                    🔄 Erneut anfahren lassen (Status auf Offen)
-                  </button>
-                </div>
-              )}
-
-              <div style={{ display: "flex", gap: 10, marginTop: 15 }}>
-                <button onClick={() => createPDF(a)} style={{ flex: 1, padding: 10, border: "none", borderRadius: 5, background: "#eee" }}>📄 PDF</button>
-                <button onClick={() => deleteAuftrag(a._id)} style={{ flex: 1, padding: 10, background: "#ff4d4d", color: "white", border: "none", borderRadius: 5 }}>🗑 Löschen</button>
-              </div>
-
-            </div>
-          ))}
-        </>
-      )}
-    </div>
-  );
+                  <div style={{ display: "flex", gap: 10, marginTop: 15 }}>
+                    <button onClick={() => createPDF(a)} style={{ flex: 1, padding: 10, background: "#eee", border: "none", borderRadius: 5, cursor: "pointer" }}>📄 PDF Bericht</button>
+                    <button onClick={() => deleteAuftrag(a._id)} style={{ flex: 1, padding: 10, background: "#ff4d4d", color: "white", border: "none", borderRadius: 5, cursor: "pointer" }}>🗑 Löschen</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default App;
