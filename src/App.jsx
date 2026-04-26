@@ -418,277 +418,170 @@ if (a.status === "erledigt") {
   });
 
   return (
-    <div style={{ padding: 20, minHeight: "100vh" }} onClick={unlockAudio} onTouchStart={unlockAudio}>
-      <h1>🚛 Reklamations App</h1>
-
-      {/* LOGIN */}
-      {!user && (
-        <>
-          <select onChange={(e) => setLoginName(e.target.value)}>
-            <option value="">Wählen</option>
-            <option>Max</option>
-            <option>Tom</option>
-            <option>Ali</option>
-            <option>Dispo</option>
-          </select>
-          <input
-            type="password"
-            placeholder="Passwort"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            style={{ marginLeft: 10 }}
-          />
-          <button onClick={login}>Login</button>
-        </>
-      )}
-
-      {/* FAHRER ANSICHT */}
-      {user && isFahrer && (
-        <>
-          <button onClick={logout}>🚪 Logout ({user})</button>
-          <h2>🚚 Meine Aufträge</h2>
-          {meine.length === 0 && <p>Keine offenen Aufträge</p>}
-
-          {meine.map((a) => (
-            <div key={a._id} style={{ border: "2px solid #ddd", padding: 10, marginBottom: 10 }}>
-              <b>#{a.nummer}</b><br />
-              📍 {a.strasse}<br />
-              {a.plzOrt}<br />
-              📦 {a.material}<br />
-
-              <a
-  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(a.strasse + ", " + a.plzOrt)}`}
-  target="_blank"
-  rel="noopener noreferrer"
-  style={{
-    display: "inline-block",
-    background: "#4285F4",
-    color: "white",
-    padding: "8px 12px",
-    textDecoration: "none",
-    borderRadius: "5px",
-    margin: "10px 10px 10px 0",
-    fontWeight: "bold"
-  }}
->
-  🗺️ Route starten
-</a>
-
-              <div style={{ display: "flex", gap: "10px", marginTop: "10px" }}>
-                <input
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  id={`kamera-${a._id}`}
-                  style={{ display: "none" }}
-                  onChange={(e) => handleFehlanfahrt(a._id, e.target.files[0])}
-                />
-                <button
-                  onClick={() => document.getElementById(`kamera-${a._id}`).click()}
-                  style={{ padding: "8px 12px", background: "orange", color: "white", flex: 1, border: "none", borderRadius: 5 }}
-                >
-                  📷 Keine Tonne
-                </button>
-                <button
-                  onClick={() => toggleStatus(a._id)}
-                  style={{ padding: "8px 12px", background: "green", color: "white", flex: 1, border: "none", borderRadius: 5 }}
-                >
-                  ✅ Erledigt
-                </button>
-              </div>
-            </div>
-          ))}
-        </>
-      )}
-
-      {/* DISPO ANSICHT */}
-      {/* DISPO ANSICHT - OPTIMIERT FÜR KARLSRUHE */}
-      {/* DISPO ANSICHT - PROFISSIONAL STICKY LAYOUT */}
-      {user && isDispo && (
-        <div style={{ maxWidth: "1400px", margin: "0 auto", fontFamily: "sans-serif" }}>
-          
-          {/* HEADER - FESTGEKLEBT OBEN */}
-          <div style={{ 
-            position: "sticky", 
-            top: 0, 
-            zIndex: 1000, 
-            display: "flex", 
-            justifyContent: "space-between", 
-            alignItems: "center", 
-            marginBottom: 25, 
-            background: "#fff", 
-            padding: "15px 20px", 
-            borderRadius: "0 0 10px 10px", 
-            boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
-            borderBottom: "2px solid #007bff"
-          }}>
-            <h2 style={{ margin: 0, display: "flex", alignItems: "center", gap: "10px" }}>
-              <span style={{ fontSize: "24px" }}>🏢</span> Dispositions-Zentrale
-            </h2>
-            <div style={{ display: "flex", alignItems: "center", gap: "15px" }}>
-              <span style={{ color: "#666", fontWeight: "bold" }}>👤 Dispo-Modus</span>
-              <button onClick={logout} style={{ padding: "8px 15px", borderRadius: "5px", border: "1px solid #ff4d4d", color: "#ff4d4d", background: "none", cursor: "pointer", fontWeight: "bold" }}>🚪 Logout</button>
-            </div>
+    <div style={{ minHeight: "100vh", background: "#f4f7f9", display: "flex", flexDirection: "column" }} onClick={unlockAudio} onTouchStart={unlockAudio}>
+      
+      {/* 1. HAUPT-HEADER: FIXIERT FÜR ALLE */}
+      <div style={{
+        position: "sticky",
+        top: 0,
+        zIndex: 2000,
+        background: "#007bff",
+        color: "white",
+        padding: "10px 20px",
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        boxShadow: "0 2px 10px rgba(0,0,0,0.2)"
+      }}>
+        <h1 style={{ margin: 0, fontSize: "22px", display: "flex", alignItems: "center", gap: "10px" }}>
+          <span>🚛</span> Reklamations App
+        </h1>
+        
+        {user && (
+          <div style={{ display: "flex", alignItems: "center", gap: "15px" }}>
+            <span style={{ fontSize: "14px", fontWeight: "bold", background: "rgba(255,255,255,0.2)", padding: "4px 10px", borderRadius: "15px" }}>
+              👤 {user}
+            </span>
+            <button 
+              onClick={logout} 
+              style={{ background: "#fff", color: "#007bff", border: "none", padding: "6px 12px", borderRadius: "5px", cursor: "pointer", fontWeight: "bold", fontSize: "13px" }}
+            >
+              🚪 Logout
+            </button>
           </div>
+        )}
+      </div>
 
-          <div style={{ 
-            display: "grid", 
-            gridTemplateColumns: window.innerWidth > 900 ? "380px 1fr" : "1fr", 
-            gap: "30px",
-            alignItems: "start" // WICHTIG: Verhindert, dass die linke Spalte gestreckt wird
-          }}>
+      <div style={{ padding: "20px" }}>
+        
+        {/* LOGIN ANSICHT */}
+        {!user && (
+          <div style={{ maxWidth: "400px", margin: "100px auto", textAlign: "center", background: "white", padding: "30px", borderRadius: "15px", boxShadow: "0 10px 25px rgba(0,0,0,0.1)" }}>
+            <h2>Anmelden</h2>
+            <select onChange={(e) => setLoginName(e.target.value)} style={{ ...modernInput, width: "100%", marginBottom: "15px" }}>
+              <option value="">Benutzer wählen</option>
+              <option>Max</option><option>Tom</option><option>Ali</option><option>Dispo</option>
+            </select>
+            <input
+              type="password"
+              placeholder="Passwort"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              style={{ ...modernInput, width: "93%", marginBottom: "20px" }}
+            />
+            <button onClick={login} style={{ width: "100%", padding: "12px", background: "#007bff", color: "white", border: "none", borderRadius: "8px", fontWeight: "bold", cursor: "pointer" }}>Einloggen</button>
+          </div>
+        )}
+
+        {/* FAHRER ANSICHT */}
+        {user && isFahrer && (
+          <div style={{ maxWidth: "600px", margin: "0 auto" }}>
+            <h2 style={{ color: "#333" }}>🚚 Meine Aufträge ({meine.length})</h2>
+            {meine.length === 0 && <div style={{ textAlign: "center", padding: "50px", color: "#666" }}>🎉 Alle Aufträge erledigt!</div>}
             
-            {/* LINKE SPALTE: FORMULAR - FESTGEKLEBT BEIM SCROLLEN */}
-            <div style={{ 
-              position: window.innerWidth > 900 ? "sticky" : "relative", 
-              top: "100px", // Abstand zum oberen Rand
-              maxHeight: "calc(100vh - 120px)", // Verhindert, dass das Formular über den Bildschirmrand geht
-            }}>
-              <button
-                onClick={ladeDemoDaten}
-                style={{ width: "100%", padding: 15, marginBottom: 20, fontWeight: "bold", background: "#6f42c1", color: "white", border: "none", borderRadius: 8, cursor: "pointer", boxShadow: "0 4px 6px rgba(0,0,0,0.1)" }}
-              >
-                🪄 MTK-Präsentation laden
-              </button>
+            {meine.map((a) => (
+              <div key={a._id} style={{ background: "white", padding: "20px", borderRadius: "15px", marginBottom: "20px", boxShadow: "0 4px 12px rgba(0,0,0,0.08)", border: "1px solid #eee" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "10px" }}>
+                  <b style={{ fontSize: "18px" }}>#{a.nummer}</b>
+                  <span style={{ color: "#007bff", fontWeight: "bold" }}>{a.material}</span>
+                </div>
+                <div style={{ color: "#555", marginBottom: "15px" }}>
+                  📍 {a.strasse}<br />{a.plzOrt}
+                </div>
 
-              <div style={{ background: "#fdfdfd", padding: 25, borderRadius: 15, border: "1px solid #ddd", boxShadow: "0 4px 12px rgba(0,0,0,0.05)" }}>
-                <h3 style={{ marginTop: 0, color: "#007bff", display: "flex", alignItems: "center", gap: "8px" }}>
-                  <span>➕</span> Neuer Auftrag
-                </h3>
-                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                  <input placeholder="Auftragsnummer" value={form.nummer} onChange={(e) => setForm({ ...form, nummer: e.target.value })} style={modernInput} />
-                  <input placeholder="Straße" value={form.strasse} onChange={(e) => setForm({ ...form, strasse: e.target.value })} style={modernInput} />
-                  <input placeholder="Ort" value={form.plzOrt} onChange={(e) => setForm({ ...form, plzOrt: e.target.value })} style={modernInput} />
-                  
-                  <select value={form.material} onChange={(e) => setForm({ ...form, material: e.target.value })} style={modernInput}>
-                    <option value="">-- Material wählen --</option>
-                    {materialListe.map((m, i) => (<option key={i} value={m}>{m}</option>))}
-                  </select>
+                <a
+                  href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(a.strasse + ", " + a.plzOrt)}`}
+                  target="_blank" rel="noopener noreferrer"
+                  style={{ display: "block", textAlign: "center", background: "#4285F4", color: "white", padding: "12px", textDecoration: "none", borderRadius: "8px", fontWeight: "bold", marginBottom: "15px" }}
+                >
+                  🗺️ Route starten
+                </a>
 
-                  <select value={form.fahrer} onChange={(e) => setForm({ ...form, fahrer: e.target.value })} style={modernInput}>
-                    <option value="">-- Fahrer zuweisen --</option>
-                    <option>Max</option><option>Tom</option><option>Ali</option>
-                  </select>
-
-                  <button onClick={addAuftrag} style={{ width: "100%", padding: 15, fontSize: 16, border: "none", borderRadius: 8, background: "#007bff", color: "white", fontWeight: "bold", cursor: "pointer", marginTop: "10px", transition: "0.2s" }}>
-                    🚀 Auftrag absenden
-                  </button>
+                <div style={{ display: "flex", gap: "10px" }}>
+                  <input type="file" accept="image/*" capture="environment" id={`kamera-${a._id}`} style={{ display: "none" }} onChange={(e) => handleFehlanfahrt(a._id, e.target.files[0])} />
+                  <button onClick={() => document.getElementById(`kamera-${a._id}`).click()} style={{ flex: 1, padding: "12px", background: "#ed8936", color: "white", border: "none", borderRadius: "8px", fontWeight: "bold", cursor: "pointer" }}>📷 Keine Tonne</button>
+                  <button onClick={() => toggleStatus(a._id)} style={{ flex: 1, padding: "12px", background: "#48bb78", color: "white", border: "none", borderRadius: "8px", fontWeight: "bold", cursor: "pointer" }}>✅ Erledigt</button>
                 </div>
               </div>
-            </div>
+            ))}
+          </div>
+        )}
 
-            {/* RECHTE SPALTE: LISTE - SCROLLBAR */}
-            <div style={{ paddingBottom: "100px" }}>
+        {/* DISPO ANSICHT */}
+        {user && isDispo && (
+          <div style={{ maxWidth: "1400px", margin: "0 auto" }}>
+            <div style={{ display: "grid", gridTemplateColumns: window.innerWidth > 900 ? "380px 1fr" : "1fr", gap: "30px", alignItems: "start" }}>
               
-              {/* FILTER BUTTONS - JETZT AUCH STICKY! */}
-              <div style={{ 
-                position: "sticky", 
-                top: "100px", // Gleiche Höhe wie das Formular links
-                zIndex: 900, 
-                background: "#fdfdfd", // Gleiche Farbe wie der Hintergrund
-                padding: "15px 12px", 
-                borderRadius: "12px",
-                marginBottom: "20px",
-                boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)",
-                border: "1px solid #eee",
-                display: "flex", 
-                flexWrap: "wrap", 
-                gap: "10px"
-              }}>
-                {[
-                  { id: "offen", label: "🔴 Offen", color: "#d9534f" },
-                  { id: "erledigt", label: "🟢 Erledigt", color: "#28a745" },
-                  { id: "fehlanfahrt", label: "⚠️ Fehlanfahrten", color: "#f0ad4e" },
-                  { id: "alle", label: "📋 Alle", color: "#333" }
-                ].map((btn) => (
-                  <button
-                    key={btn.id}
-                    onClick={() => setFilter(btn.id)}
-                    style={{
-                      flex: "1", 
-                      minWidth: "110px", 
-                      padding: "12px", 
-                      borderRadius: "8px", 
-                      border: "none", 
-                      cursor: "pointer",
-                      background: filter === btn.id ? btn.color : "#fff",
-                      color: filter === btn.id ? "#fff" : "#333",
-                      fontWeight: "bold", 
-                      boxShadow: filter === btn.id ? "0 4px 10px rgba(0,0,0,0.15)" : "0 2px 4px rgba(0,0,0,0.05)", 
-                      transition: "all 0.2s ease"
-                    }}
-                  >
-                    {btn.label}
-                  </button>
-                ))}
-              </div>
-
-              {/* AUFTRAGS-KARTEN */}
-              {gefilterteAuftraege.map((a) => (
-                <div key={a._id} style={{ 
-                  background: "#fff", borderLeft: `8px solid ${a.status === "erledigt" ? "#28a745" : (a.status === "fehlanfahrt" ? "#f0ad4e" : "#d9534f")}`,
-                  padding: "20px", marginBottom: "20px", borderRadius: "12px", boxShadow: "0 4px 15px rgba(0,0,0,0.06)", border: "1px solid #eee"
-                }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ fontSize: "20px", fontWeight: "bold", color: "#333" }}>#{a.nummer}</span>
-                    <span style={{ fontWeight: "bold", color: "#666", background: "#f0f0f0", padding: "4px 10px", borderRadius: "5px" }}>{a.material}</span>
-                  </div>
-                  
-                  <div style={{ margin: "15px 0", fontSize: "15px", lineHeight: "1.6" }}>
-                    📍 <strong>{a.strasse}, {a.plzOrt}</strong><br/>
-                    👤 Fahrer: 
-                    <select 
-                      value={a.fahrer || ""} 
-                      onChange={(e) => updateFahrer(a._id, e.target.value)}
-                      style={{ marginLeft: "10px", padding: "6px", borderRadius: "5px", border: "1px solid #ccc", background: "#fff", cursor: "pointer" }}
-                    >
-                      <option value="">-- Nicht zugewiesen --</option>
-                      <option>Max</option><option>Tom</option><option>Ali</option>
-                    </select>
-                  </div>
-
-                  {/* FEHLANFAHRT SECTION */}
-                  {(a.fehlanfahrt?.bild || a.fehlanfahrt2?.bild) && (
-                    <div style={{ marginTop: 15, padding: "15px", background: "#fff5f5", border: "1px solid #feb2b2", borderRadius: "10px" }}>
-                      <strong style={{ color: "#c53030", display: "block", marginBottom: "10px" }}>⚠️ Fehlanfahrt-Historie:</strong>
-                      <div style={{ display: "flex", gap: "10px", overflowX: "auto" }}>
-                        {a.fehlanfahrt?.bild && (
-                          <div style={{ flex: "1" }}>
-                            <small style={{ color: "#666" }}>1. Versuch:</small>
-                            <img src={a.fehlanfahrt.bild} alt="Beweis 1" style={{ width: "100%", height: "150px", objectFit: "cover", borderRadius: "8px", border: "1px solid #ddd" }} />
-                          </div>
-                        )}
-                        {a.fehlanfahrt2?.bild && (
-                          <div style={{ flex: "1" }}>
-                            <small style={{ color: "#666" }}>2. Versuch:</small>
-                            <img src={a.fehlanfahrt2.bild} alt="Beweis 2" style={{ width: "100%", height: "150px", objectFit: "cover", borderRadius: "8px", border: "1px solid #ddd" }} />
-                          </div>
-                        )}
-                      </div>
-                      <button onClick={() => resetAuftrag(a._id)} style={{ width: "100%", marginTop: "12px", padding: "10px", background: "#ed8936", color: "white", border: "none", borderRadius: "6px", fontWeight: "bold", cursor: "pointer" }}>🔄 Erneut anfahren lassen</button>
-                    </div>
-                  )}
-
-                  <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
-                    <button onClick={() => createPDF(a)} style={{ flex: 1, padding: "12px", background: "#f8f9fa", border: "1px solid #ddd", borderRadius: "8px", cursor: "pointer", fontWeight: "bold" }}>📄 PDF Bericht</button>
-                    <button onClick={() => deleteAuftrag(a._id)} style={{ flex: 1, padding: "12px", background: "#fff5f5", border: "1px solid #feb2b2", color: "#c53030", borderRadius: "8px", cursor: "pointer", fontWeight: "bold" }}>🗑 Löschen</button>
+              {/* LINKE SPALTE: FORMULAR STICKY */}
+              <div style={{ position: window.innerWidth > 900 ? "sticky" : "relative", top: "70px" }}>
+                <button onClick={ladeDemoDaten} style={{ width: "100%", padding: "15px", marginBottom: "20px", background: "#6f42c1", color: "white", border: "none", borderRadius: "10px", fontWeight: "bold", cursor: "pointer", boxShadow: "0 4px 6px rgba(0,0,0,0.1)" }}>🪄 MTK-Präsentation laden</button>
+                <div style={{ background: "white", padding: "25px", borderRadius: "15px", boxShadow: "0 4px 15px rgba(0,0,0,0.05)", border: "1px solid #eee" }}>
+                  <h3 style={{ marginTop: 0, color: "#007bff" }}>➕ Neuer Auftrag</h3>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                    <input placeholder="Auftragsnummer" value={form.nummer} onChange={(e) => setForm({ ...form, nummer: e.target.value })} style={modernInput} />
+                    <input placeholder="Straße" value={form.strasse} onChange={(e) => setForm({ ...form, strasse: e.target.value })} style={modernInput} />
+                    <input placeholder="Ort" value={form.plzOrt} onChange={(e) => setForm({ ...form, plzOrt: e.target.value })} style={modernInput} />
+                    <select value={form.material} onChange={(e) => setForm({ ...form, material: e.target.value })} style={modernInput}><option value="">-- Material --</option>{materialListe.map((m, i) => (<option key={i} value={m}>{m}</option>))}</select>
+                    <select value={form.fahrer} onChange={(e) => setForm({ ...form, fahrer: e.target.value })} style={modernInput}><option value="">-- Fahrer --</option><option>Max</option><option>Tom</option><option>Ali</option></select>
+                    <button onClick={addAuftrag} style={{ padding: "15px", background: "#007bff", color: "white", border: "none", borderRadius: "8px", fontWeight: "bold", cursor: "pointer" }}>🚀 Auftrag absenden</button>
                   </div>
                 </div>
-              ))}
+              </div>
+
+              {/* RECHTE SPALTE: LISTE MIT STICKY FILTERN */}
+              <div style={{ minHeight: "100vh" }}>
+                <div style={{ position: "sticky", top: "70px", zIndex: 900, background: "#f4f7f9", padding: "10px 0 20px 0", display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                  {[{ id: "offen", label: "🔴 Offen", color: "#d9534f" }, { id: "erledigt", label: "🟢 Erledigt", color: "#28a745" }, { id: "fehlanfahrt", label: "⚠️ Fehlanfahrt", color: "#f0ad4e" }, { id: "alle", label: "📋 Alle", color: "#333" }].map((btn) => (
+                    <button key={btn.id} onClick={() => setFilter(btn.id)} style={{ flex: 1, minWidth: "100px", padding: "12px", borderRadius: "8px", border: "none", cursor: "pointer", background: filter === btn.id ? btn.color : "white", color: filter === btn.id ? "white" : "#333", fontWeight: "bold", boxShadow: "0 2px 5px rgba(0,0,0,0.1)" }}>{btn.label}</button>
+                  ))}
+                </div>
+
+                {/* HIER SIND DIE AUFTRAGSKARTEN */}
+                <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+                  {gefilterteAuftraege.map((a) => (
+                    <div key={a._id} style={{ background: "white", borderLeft: `8px solid ${a.status === "erledigt" ? "#28a745" : (a.status === "fehlanfahrt" ? "#f0ad4e" : "#d9534f")}`, padding: "20px", borderRadius: "12px", boxShadow: "0 4px 12px rgba(0,0,0,0.05)", border: "1px solid #eee" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <b style={{ fontSize: "18px" }}>#{a.nummer}</b>
+                        <span style={{ fontWeight: "bold", color: "#666", background: "#f0f0f0", padding: "4px 10px", borderRadius: "5px" }}>{a.material}</span>
+                      </div>
+                      <div style={{ margin: "15px 0" }}>
+                        📍 <strong>{a.strasse}, {a.plzOrt}</strong><br />
+                        👤 Fahrer: 
+                        <select value={a.fahrer || ""} onChange={(e) => updateFahrer(a._id, e.target.value)} style={{ marginLeft: "10px", padding: "5px", borderRadius: "5px", border: "1px solid #ccc" }}>
+                          <option value="">-- Nicht zugewiesen --</option>
+                          <option>Max</option><option>Tom</option><option>Ali</option>
+                        </select>
+                      </div>
+
+                      {/* FEHLANFAHRT BILDER */}
+                      {(a.fehlanfahrt?.bild || a.fehlanfahrt2?.bild) && (
+                        <div style={{ background: "#fff5f5", padding: "15px", borderRadius: "10px", border: "1px solid #feb2b2", marginBottom: "15px" }}>
+                          <strong style={{ color: "#c53030", display: "block", marginBottom: "10px" }}>⚠️ Beweisfotos:</strong>
+                          <div style={{ display: "flex", gap: "10px" }}>
+                            {a.fehlanfahrt?.bild && <div style={{ flex: 1 }}><small>1. Versuch:</small><img src={a.fehlanfahrt.bild} style={{ width: "100%", borderRadius: "8px", border: "1px solid #ddd" }} alt="1" /></div>}
+                            {a.fehlanfahrt2?.bild && <div style={{ flex: 1 }}><small>2. Versuch:</small><img src={a.fehlanfahrt2.bild} style={{ width: "100%", borderRadius: "8px", border: "1px solid #ddd" }} alt="2" /></div>}
+                          </div>
+                          <button onClick={() => resetAuftrag(a._id)} style={{ width: "100%", marginTop: "15px", padding: "12px", background: "#ed8936", color: "white", border: "none", borderRadius: "8px", fontWeight: "bold", cursor: "pointer" }}>🔄 Erneut anfahren lassen</button>
+                        </div>
+                      )}
+
+                      <div style={{ display: "flex", gap: "10px" }}>
+                        <button onClick={() => createPDF(a)} style={{ flex: 1, padding: "12px", borderRadius: "8px", border: "1px solid #ddd", fontWeight: "bold", cursor: "pointer" }}>📄 PDF Bericht</button>
+                        <button onClick={() => deleteAuftrag(a._id)} style={{ flex: 1, padding: "12px", borderRadius: "8px", background: "#fff5f5", color: "#c53030", border: "1px solid #feb2b2", fontWeight: "bold", cursor: "pointer" }}>🗑 Löschen</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      )}
-     </div>
-   );
+        )}
+      </div>
+    </div>
+  );
 }
-const modernInput = { 
-  width: "93%", 
-  padding: "12px", 
-  borderRadius: "8px", 
-  border: "1px solid #ddd", 
-  fontSize: "15px",
-  background: "#fff"
-};
+
+// HILFS-VARIABLEN (ganz unten lassen)
+const modernInput = { padding: "12px", borderRadius: "8px", border: "1px solid #ddd", fontSize: "15px", outline: "none", background: "#fff" };
 
 export default App;
