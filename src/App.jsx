@@ -503,150 +503,171 @@ if (a.status === "erledigt") {
 
       {/* DISPO ANSICHT */}
       {/* DISPO ANSICHT - OPTIMIERT FÜR KARLSRUHE */}
-      {user && isDispo && (
-        <div style={{ maxWidth: "1200px", margin: "0 auto", fontFamily: "sans-serif" }}>
-          
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, background: "#fff", padding: "15px", borderRadius: "10px", boxShadow: "0 2px 5px rgba(0,0,0,0.1)" }}>
-            <h2 style={{ margin: 0 }}>📋 Dispositions-Zentrale</h2>
-            <button onClick={logout} style={{ padding: "8px 15px", borderRadius: "5px", border: "1px solid #ccc", cursor: "pointer" }}>🚪 Logout</button>
-          </div>
+      {/* DISPO ANSICHT - PROFISSIONAL STICKY LAYOUT */}
+      {user && isDispo && (
+        <div style={{ maxWidth: "1400px", margin: "0 auto", fontFamily: "sans-serif" }}>
+          
+          {/* HEADER - FESTGEKLEBT OBEN */}
+          <div style={{ 
+            position: "sticky", 
+            top: 0, 
+            zIndex: 1000, 
+            display: "flex", 
+            justifyContent: "space-between", 
+            alignItems: "center", 
+            marginBottom: 25, 
+            background: "#fff", 
+            padding: "15px 20px", 
+            borderRadius: "0 0 10px 10px", 
+            boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
+            borderBottom: "2px solid #007bff"
+          }}>
+            <h2 style={{ margin: 0, display: "flex", alignItems: "center", gap: "10px" }}>
+              <span style={{ fontSize: "24px" }}>🏢</span> Dispositions-Zentrale
+            </h2>
+            <div style={{ display: "flex", alignItems: "center", gap: "15px" }}>
+              <span style={{ color: "#666", fontWeight: "bold" }}>👤 Dispo-Modus</span>
+              <button onClick={logout} style={{ padding: "8px 15px", borderRadius: "5px", border: "1px solid #ff4d4d", color: "#ff4d4d", background: "none", cursor: "pointer", fontWeight: "bold" }}>🚪 Logout</button>
+            </div>
+          </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: window.innerWidth > 800 ? "350px 1fr" : "1fr", gap: "25px" }}>
-            
-            {/* LINKE SPALTE: FORMULAR */}
-            <div>
-              <button
-                onClick={ladeDemoDaten}
-                style={{ width: "100%", padding: 15, marginBottom: 20, fontWeight: "bold", background: "#6f42c1", color: "white", border: "none", borderRadius: 8, cursor: "pointer" }}
-              >
-                🪄 Demo-Board laden
-              </button>
+          <div style={{ 
+            display: "grid", 
+            gridTemplateColumns: window.innerWidth > 900 ? "380px 1fr" : "1fr", 
+            gap: "30px",
+            alignItems: "start" // WICHTIG: Verhindert, dass die linke Spalte gestreckt wird
+          }}>
+            
+            {/* LINKE SPALTE: FORMULAR - FESTGEKLEBT BEIM SCROLLEN */}
+            <div style={{ 
+              position: window.innerWidth > 900 ? "sticky" : "relative", 
+              top: "100px", // Abstand zum oberen Rand
+              maxHeight: "calc(100vh - 120px)", // Verhindert, dass das Formular über den Bildschirmrand geht
+            }}>
+              <button
+                onClick={ladeDemoDaten}
+                style={{ width: "100%", padding: 15, marginBottom: 20, fontWeight: "bold", background: "#6f42c1", color: "white", border: "none", borderRadius: 8, cursor: "pointer", boxShadow: "0 4px 6px rgba(0,0,0,0.1)" }}
+              >
+                🪄 MTK-Präsentation laden
+              </button>
 
-              <div style={{ background: "#f9f9f9", padding: 20, borderRadius: 12, border: "1px solid #ddd" }}>
-                <h3 style={{ marginTop: 0 }}>➕ Neuer Auftrag</h3>
-                <input placeholder="Nr" value={form.nummer} onChange={(e) => setForm({ ...form, nummer: e.target.value })} style={{ width: "93%", padding: "10px", marginBottom: 10, borderRadius: "5px", border: "1px solid #ccc" }} />
-                <input placeholder="Straße" value={form.strasse} onChange={(e) => setForm({ ...form, strasse: e.target.value })} style={{ width: "93%", padding: "10px", marginBottom: 10, borderRadius: "5px", border: "1px solid #ccc" }} />
-                <input placeholder="Ort" value={form.plzOrt} onChange={(e) => setForm({ ...form, plzOrt: e.target.value })} style={{ width: "93%", padding: "10px", marginBottom: 10, borderRadius: "5px", border: "1px solid #ccc" }} />
-                
-                <select value={form.material} onChange={(e) => setForm({ ...form, material: e.target.value })} style={{ width: "100%", padding: "10px", marginBottom: 10, borderRadius: "5px", border: "1px solid #ccc" }}>
-                  <option value="">Material wählen</option>
-                  {materialListe.map((m, i) => (<option key={i} value={m}>{m}</option>))}
-                </select>
+              <div style={{ background: "#fdfdfd", padding: 25, borderRadius: 15, border: "1px solid #ddd", boxShadow: "0 4px 12px rgba(0,0,0,0.05)" }}>
+                <h3 style={{ marginTop: 0, color: "#007bff", display: "flex", alignItems: "center", gap: "8px" }}>
+                  <span>➕</span> Neuer Auftrag
+                </h3>
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                  <input placeholder="Auftragsnummer" value={form.nummer} onChange={(e) => setForm({ ...form, nummer: e.target.value })} style={modernInput} />
+                  <input placeholder="Straße" value={form.strasse} onChange={(e) => setForm({ ...form, strasse: e.target.value })} style={modernInput} />
+                  <input placeholder="Ort" value={form.plzOrt} onChange={(e) => setForm({ ...form, plzOrt: e.target.value })} style={modernInput} />
+                  
+                  <select value={form.material} onChange={(e) => setForm({ ...form, material: e.target.value })} style={modernInput}>
+                    <option value="">-- Material wählen --</option>
+                    {materialListe.map((m, i) => (<option key={i} value={m}>{m}</option>))}
+                  </select>
 
-                <select value={form.fahrer} onChange={(e) => setForm({ ...form, fahrer: e.target.value })} style={{ width: "100%", padding: "10px", marginBottom: 15, borderRadius: "5px", border: "1px solid #ccc" }}>
-                  <option value="">Fahrer wählen</option>
-                  <option>Max</option><option>Tom</option><option>Ali</option>
-                </select>
+                  <select value={form.fahrer} onChange={(e) => setForm({ ...form, fahrer: e.target.value })} style={modernInput}>
+                    <option value="">-- Fahrer zuweisen --</option>
+                    <option>Max</option><option>Tom</option><option>Ali</option>
+                  </select>
 
-                <button onClick={addAuftrag} style={{ width: "100%", padding: 12, fontSize: 16, border: "none", borderRadius: 5, background: "#007bff", color: "white", fontWeight: "bold", cursor: "pointer" }}>
-                  ➕ Auftrag erstellen
-                </button>
-              </div>
-            </div>
+                  <button onClick={addAuftrag} style={{ width: "100%", padding: 15, fontSize: 16, border: "none", borderRadius: 8, background: "#007bff", color: "white", fontWeight: "bold", cursor: "pointer", marginTop: "10px", transition: "0.2s" }}>
+                    🚀 Auftrag absenden
+                  </button>
+                </div>
+              </div>
+            </div>
 
-            {/* RECHTE SPALTE: LISTE */}
-            <div>
-              {/* FILTER BUTTONS */}
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginBottom: 20, background: "#eee", padding: "10px", borderRadius: "10px" }}>
-                {[
-                  { id: "offen", label: "🔴 Offen", color: "#d9534f" },
-                  { id: "erledigt", label: "🟢 Erledigt", color: "#28a745" },
-                  { id: "fehlanfahrt", label: "⚠️ Fehlanfahrten", color: "#f0ad4e" },
-                  { id: "alle", label: "📋 Alle", color: "#333" }
-                ].map((btn) => (
-                  <button
-                    key={btn.id}
-                    onClick={() => setFilter(btn.id)}
-                    style={{
-                      flex: "1", minWidth: "100px", padding: "10px", borderRadius: "8px", border: "none", cursor: "pointer",
-                      background: filter === btn.id ? btn.color : "#fff",
-                      color: filter === btn.id ? "#fff" : "#333",
-                      fontWeight: "bold", boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
-                    }}
-                  >
-                    {btn.label}
-                  </button>
-                ))}
-              </div>
+            {/* RECHTE SPALTE: LISTE - SCROLLBAR */}
+            <div style={{ paddingBottom: "100px" }}>
+              {/* FILTER BUTTONS */}
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginBottom: 20, background: "#f0f2f5", padding: "12px", borderRadius: "12px" }}>
+                {[
+                  { id: "offen", label: "🔴 Offen", color: "#d9534f" },
+                  { id: "erledigt", label: "🟢 Erledigt", color: "#28a745" },
+                  { id: "fehlanfahrt", label: "⚠️ Fehlanfahrten", color: "#f0ad4e" },
+                  { id: "alle", label: "📋 Alle", color: "#333" }
+                ].map((btn) => (
+                  <button
+                    key={btn.id}
+                    onClick={() => setFilter(btn.id)}
+                    style={{
+                      flex: "1", minWidth: "110px", padding: "12px", borderRadius: "8px", border: "none", cursor: "pointer",
+                      background: filter === btn.id ? btn.color : "#fff",
+                      color: filter === btn.id ? "#fff" : "#333",
+                      fontWeight: "bold", boxShadow: "0 2px 4px rgba(0,0,0,0.1)", transition: "0.2s"
+                    }}
+                  >
+                    {btn.label}
+                  </button>
+                ))}
+              </div>
 
-              {/* AUFTRAGS-KARTEN */}
-              {gefilterteAuftraege.map((a) => (
-                <div key={a._id} style={{ 
-                  background: "#fff", borderLeft: `8px solid ${a.status === "erledigt" ? "#28a745" : (a.status === "fehlanfahrt" ? "#f0ad4e" : "#d9534f")}`,
-                  padding: "15px", marginBottom: "15px", borderRadius: "10px", boxShadow: "0 2px 8px rgba(0,0,0,0.1)" 
-                }}>
-                  <div style={{ display: "flex", justifyContent: "space-between" }}>
-                    <span style={{ fontSize: "18px", fontWeight: "bold" }}>#{a.nummer}</span>
-                    <span style={{ fontWeight: "bold", color: "#666" }}>{a.material}</span>
-                  </div>
-                  
-                  <div style={{ margin: "10px 0" }}>
-                    📍 {a.strasse}, {a.plzOrt}<br/>
+              {/* AUFTRAGS-KARTEN */}
+              {gefilterteAuftraege.map((a) => (
+                <div key={a._id} style={{ 
+                  background: "#fff", borderLeft: `8px solid ${a.status === "erledigt" ? "#28a745" : (a.status === "fehlanfahrt" ? "#f0ad4e" : "#d9534f")}`,
+                  padding: "20px", marginBottom: "20px", borderRadius: "12px", boxShadow: "0 4px 15px rgba(0,0,0,0.06)", border: "1px solid #eee"
+                }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontSize: "20px", fontWeight: "bold", color: "#333" }}>#{a.nummer}</span>
+                    <span style={{ fontWeight: "bold", color: "#666", background: "#f0f0f0", padding: "4px 10px", borderRadius: "5px" }}>{a.material}</span>
+                  </div>
+                  
+                  <div style={{ margin: "15px 0", fontSize: "15px", lineHeight: "1.6" }}>
+                    📍 <strong>{a.strasse}, {a.plzOrt}</strong><br/>
                     👤 Fahrer: 
                     <select 
                       value={a.fahrer || ""} 
                       onChange={(e) => updateFahrer(a._id, e.target.value)}
-                      style={{ 
-                        marginLeft: "10px", 
-                        padding: "5px", 
-                        borderRadius: "5px", 
-                        border: "1px solid #ccc",
-                        background: "#fff",
-                        fontSize: "14px",
-                        cursor: "pointer"
-                      }}
+                      style={{ marginLeft: "10px", padding: "6px", borderRadius: "5px", border: "1px solid #ccc", background: "#fff", cursor: "pointer" }}
                     >
                       <option value="">-- Nicht zugewiesen --</option>
-                      <option>Max</option>
-                      <option>Tom</option>
-                      <option>Ali</option>
+                      <option>Max</option><option>Tom</option><option>Ali</option>
                     </select>
                   </div>
 
-{/* ANZEIGE DER FEHLANFAHRTEN IM DASHBOARD */}
-{(a.fehlanfahrt?.bild || a.fehlanfahrt2?.bild) && (
-  <div style={{ marginTop: 15, padding: 10, background: "#fff3f3", border: "1px solid red", borderRadius: 8 }}>
-    <strong style={{ color: "red" }}>⚠️ Fehlanfahrt-Historie:</strong>
-    
-    <div style={{ display: "flex", gap: "10px", marginTop: 10, overflowX: "auto" }}>
-      {/* Bild 1 */}
-      {a.fehlanfahrt?.bild && (
-        <div style={{ flex: "0 0 48%" }}>
-          <small>1. Versuch:</small>
-          <img src={a.fehlanfahrt.bild} alt="Beweis 1" style={{ width: "100%", borderRadius: 5, border: "1px solid #ddd" }} />
+                  {/* FEHLANFAHRT SECTION */}
+                  {(a.fehlanfahrt?.bild || a.fehlanfahrt2?.bild) && (
+                    <div style={{ marginTop: 15, padding: "15px", background: "#fff5f5", border: "1px solid #feb2b2", borderRadius: "10px" }}>
+                      <strong style={{ color: "#c53030", display: "block", marginBottom: "10px" }}>⚠️ Fehlanfahrt-Historie:</strong>
+                      <div style={{ display: "flex", gap: "10px", overflowX: "auto" }}>
+                        {a.fehlanfahrt?.bild && (
+                          <div style={{ flex: "1" }}>
+                            <small style={{ color: "#666" }}>1. Versuch:</small>
+                            <img src={a.fehlanfahrt.bild} alt="Beweis 1" style={{ width: "100%", height: "150px", objectFit: "cover", borderRadius: "8px", border: "1px solid #ddd" }} />
+                          </div>
+                        )}
+                        {a.fehlanfahrt2?.bild && (
+                          <div style={{ flex: "1" }}>
+                            <small style={{ color: "#666" }}>2. Versuch:</small>
+                            <img src={a.fehlanfahrt2.bild} alt="Beweis 2" style={{ width: "100%", height: "150px", objectFit: "cover", borderRadius: "8px", border: "1px solid #ddd" }} />
+                          </div>
+                        )}
+                      </div>
+                      <button onClick={() => resetAuftrag(a._id)} style={{ width: "100%", marginTop: "12px", padding: "10px", background: "#ed8936", color: "white", border: "none", borderRadius: "6px", fontWeight: "bold", cursor: "pointer" }}>🔄 Erneut anfahren lassen</button>
+                    </div>
+                  )}
+
+                  <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
+                    <button onClick={() => createPDF(a)} style={{ flex: 1, padding: "12px", background: "#f8f9fa", border: "1px solid #ddd", borderRadius: "8px", cursor: "pointer", fontWeight: "bold" }}>📄 PDF Bericht</button>
+                    <button onClick={() => deleteAuftrag(a._id)} style={{ flex: 1, padding: "12px", background: "#fff5f5", border: "1px solid #feb2b2", color: "#c53030", borderRadius: "8px", cursor: "pointer", fontWeight: "bold" }}>🗑 Löschen</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       )}
-      
-      {/* Bild 2 */}
-      {a.fehlanfahrt2?.bild && (
-        <div style={{ flex: "0 0 48%" }}>
-          <small>2. Versuch:</small>
-          <img src={a.fehlanfahrt2.bild} alt="Beweis 2" style={{ width: "100%", borderRadius: 5, border: "1px solid #ddd" }} />
-        </div>
-      )}
-    </div>
-
-    <button 
-      onClick={() => resetAuftrag(a._id)}
-      style={{ width: "100%", padding: "10px", marginTop: 10, background: "orange", color: "white", fontWeight: "bold", border: "none", borderRadius: 5, cursor: "pointer" }}
-    >
-      🔄 Erneut anfahren lassen
-    </button>
-  </div>
-)}
-
-                  <div style={{ display: "flex", gap: 10, marginTop: 15 }}>
-                    <button onClick={() => createPDF(a)} style={{ flex: 1, padding: 10, background: "#eee", border: "none", borderRadius: 5, cursor: "pointer" }}>📄 PDF Bericht</button>
-                    <button onClick={() => deleteAuftrag(a._id)} style={{ flex: 1, padding: 10, background: "#ff4d4d", color: "white", border: "none", borderRadius: 5, cursor: "pointer" }}>🗑 Löschen</button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
+     </div>
+   );
 }
+const modernInput = { 
+  width: "93%", 
+  padding: "12px", 
+  borderRadius: "8px", 
+  border: "1px solid #ddd", 
+  fontSize: "15px",
+  background: "#fff"
+};
 
 export default App;
