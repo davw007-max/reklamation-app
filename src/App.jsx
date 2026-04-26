@@ -579,8 +579,22 @@ if (a.status === "erledigt") {
 
             {/* RECHTE SPALTE: LISTE - SCROLLBAR */}
             <div style={{ paddingBottom: "100px" }}>
-              {/* FILTER BUTTONS */}
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginBottom: 20, background: "#f0f2f5", padding: "12px", borderRadius: "12px" }}>
+              
+              {/* FILTER BUTTONS - JETZT AUCH STICKY! */}
+              <div style={{ 
+                position: "sticky", 
+                top: "100px", // Gleiche Höhe wie das Formular links
+                zIndex: 900, 
+                background: "#fdfdfd", // Gleiche Farbe wie der Hintergrund
+                padding: "15px 12px", 
+                borderRadius: "12px",
+                marginBottom: "20px",
+                boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)",
+                border: "1px solid #eee",
+                display: "flex", 
+                flexWrap: "wrap", 
+                gap: "10px"
+              }}>
                 {[
                   { id: "offen", label: "🔴 Offen", color: "#d9534f" },
                   { id: "erledigt", label: "🟢 Erledigt", color: "#28a745" },
@@ -591,10 +605,17 @@ if (a.status === "erledigt") {
                     key={btn.id}
                     onClick={() => setFilter(btn.id)}
                     style={{
-                      flex: "1", minWidth: "110px", padding: "12px", borderRadius: "8px", border: "none", cursor: "pointer",
+                      flex: "1", 
+                      minWidth: "110px", 
+                      padding: "12px", 
+                      borderRadius: "8px", 
+                      border: "none", 
+                      cursor: "pointer",
                       background: filter === btn.id ? btn.color : "#fff",
                       color: filter === btn.id ? "#fff" : "#333",
-                      fontWeight: "bold", boxShadow: "0 2px 4px rgba(0,0,0,0.1)", transition: "0.2s"
+                      fontWeight: "bold", 
+                      boxShadow: filter === btn.id ? "0 4px 10px rgba(0,0,0,0.15)" : "0 2px 4px rgba(0,0,0,0.05)", 
+                      transition: "all 0.2s ease"
                     }}
                   >
                     {btn.label}
