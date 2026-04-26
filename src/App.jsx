@@ -331,12 +331,20 @@ function App() {
     };
 
     if (a.fehlanfahrt && a.fehlanfahrt.zeit) {
-      drawVisitBlock("1. ANFAHRT (Fehlanfahrt)", a.fehlanfahrt.zeit, a.fehlanfahrt.gps, a.fehlanfahrt.bild, true);
-    }
-    if (a.status === "erledigt") {
-      const titel = a.zweiteAnfahrt ? "2. ANFAHRT (Erfolgreich erledigt)" : "ANFAHRT (Erfolgreich erledigt)";
-      drawVisitBlock(titel, a.zeitErledigt, a.gps, null, false);
-    }
+  drawVisitBlock("1. ANFAHRT (Fehlanfahrt)", a.fehlanfahrt.zeit, a.fehlanfahrt.gps, a.fehlanfahrt.bild, true);
+}
+
+// 2. ANFAHRT PRÜFEN (Neu hinzugefügt)
+if (a.fehlanfahrt2 && a.fehlanfahrt2.zeit) {
+  drawVisitBlock("2. ANFAHRT (Erneute Fehlanfahrt)", a.fehlanfahrt2.zeit, a.fehlanfahrt2.gps, a.fehlanfahrt2.bild, true);
+}
+
+// ERLEDIGT-BLOCK (angepasst)
+if (a.status === "erledigt") {
+  const istZweiterVersuch = a.fehlanfahrt && a.fehlanfahrt.zeit;
+  const titel = istZweiterVersuch ? "ERFOLGREICHE ANFAHRT (Nach Fehlanfahrt)" : "ANFAHRT (Erfolgreich erledigt)";
+  drawVisitBlock(titel, a.zeitErledigt, a.gps, null, false);
+}
 
     pdf.setFontSize(8);
     pdf.setTextColor(150, 150, 150);

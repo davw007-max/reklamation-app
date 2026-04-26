@@ -197,20 +197,29 @@ app.put("/auftraege/:id", async (req, res) => {
     const wirdErledigt = auftrag.status === "offen" && !statusUpdate;
     const wirdFehlanfahrt = statusUpdate === "fehlanfahrt";
 
-    if (wirdErledigt) {
-      auftrag.status = "erledigt";
-      auftrag.zeitErledigt = new Date();
-      if (lat && lng) auftrag.gps = { lat, lng };
-    } 
-    
-    if (wirdFehlanfahrt) {
-      auftrag.status = "fehlanfahrt";
-      auftrag.fehlanfahrt = {
+    // IN DER SERVER.CJS (Backend)
+      if (statusUpdate === "fehlanfahrt") {
+    const alterAuftrag = await Auftrag.findById(req.params.id);
+  
+     // Wenn schon eine Fehlanfahrt existiert, speichere die neue als fehlanfahrt2
+     if (alterAuftrag.fehlanfahrt && alterAuftrag.fehlanfahrt.zeit) {
+       updateData.fehlanfahrt2 = {
         zeit: new Date(),
-        gps: { lat, lng },
-        bild: bild
-      };
-    }
+        bild: req.body.bild,
+       gps: { lat: req.body.lat, lng: req.body.lng }
+    };
+    // Status bleibt fehlanfahrt, aber wir markieren es als "zweiter Versuch"
+        updateData.zweiteAnfahrt = true; 
+      } else {
+    // Erster Versuch
+      updateData.fehlanfahrt = {
+      zeit: new Date(),
+      bild: req.body.bild,
+      gps: { lat: req.body.lat, lng: req.body.lng }
+    };
+      updateData.status = "fehlanfahrt";
+  }
+}
 
     // 4. PDF GENERIERUNG (Einheitliches Layout für beide Fälle)
     if (wirdErledigt || wirdFehlanfahrt) {
