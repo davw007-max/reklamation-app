@@ -300,12 +300,15 @@ function App() {
       pdf.text(`Zeitpunkt: ${new Date(time).toLocaleString("de-DE")}`, 15, y); y += 5;
 
       if (gps && gps.lat) {
-        pdf.text(`GPS-Standort: ${gps.lat}, ${gps.lng}`, 15, y); y += 5;
-        pdf.setTextColor(0, 0, 255);
-        pdf.textWithLink("In Google Maps öffnen", 15, y, { url: `https://www.google.com/maps?q=${gps.lat},${gps.lng}` });
-        pdf.setTextColor(0, 0, 0);
-        y += 7;
-      }
+  pdf.text(`GPS-Standort: ${gps.lat}, ${gps.lng}`, 15, y); y += 5;
+  pdf.setTextColor(0, 0, 255);
+  // Korrigierter Link mit ${gps.lat}
+  pdf.textWithLink("In Google Maps öffnen", 15, y, { 
+    url: `https://www.google.com/maps?q=${gps.lat},${gps.lng}` 
+  });
+  pdf.setTextColor(0, 0, 0);
+  y += 7;
+}
 
       if (imageBase64) {
         try {
@@ -454,22 +457,22 @@ if (a.status === "erledigt") {
               📦 {a.material}<br />
 
               <a
-                href={`https://maps.google.com/?q=${encodeURIComponent(a.strasse + ", " + a.plzOrt)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  display: "inline-block",
-                  background: "#4285F4",
-                  color: "white",
-                  padding: "8px 12px",
-                  textDecoration: "none",
-                  borderRadius: "5px",
-                  margin: "10px 10px 10px 0",
-                  fontWeight: "bold"
-                }}
-              >
-                🗺️ Route starten
-              </a>
+  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(a.strasse + ", " + a.plzOrt)}`}
+  target="_blank"
+  rel="noopener noreferrer"
+  style={{
+    display: "inline-block",
+    background: "#4285F4",
+    color: "white",
+    padding: "8px 12px",
+    textDecoration: "none",
+    borderRadius: "5px",
+    margin: "10px 10px 10px 0",
+    fontWeight: "bold"
+  }}
+>
+  🗺️ Route starten
+</a>
 
               <div style={{ display: "flex", gap: "10px", marginTop: "10px" }}>
                 <input
@@ -600,13 +603,37 @@ if (a.status === "erledigt") {
                     </select>
                   </div>
 
-                  {a.status === "fehlanfahrt" && a.fehlanfahrt?.bild && (
-                    <div style={{ marginTop: 10, background: "#fff3f3", padding: 10, borderRadius: 8, border: "1px solid #ffcccc" }}>
-                      <div style={{ color: "red", fontWeight: "bold", marginBottom: 5 }}>⚠️ BEWEISFOTO:</div>
-                      <img src={a.fehlanfahrt.bild} style={{ width: "100%", maxHeight: "200px", objectFit: "contain", borderRadius: 5 }} alt="Beweis" />
-                      <button onClick={() => resetAuftrag(a._id)} style={{ width: "100%", marginTop: 10, padding: 8, background: "orange", color: "white", border: "none", borderRadius: 5, cursor: "pointer" }}>🔄 Neu anfahren lassen</button>
-                    </div>
-                  )}
+{/* ANZEIGE DER FEHLANFAHRTEN IM DASHBOARD */}
+{(a.fehlanfahrt?.bild || a.fehlanfahrt2?.bild) && (
+  <div style={{ marginTop: 15, padding: 10, background: "#fff3f3", border: "1px solid red", borderRadius: 8 }}>
+    <strong style={{ color: "red" }}>⚠️ Fehlanfahrt-Historie:</strong>
+    
+    <div style={{ display: "flex", gap: "10px", marginTop: 10, overflowX: "auto" }}>
+      {/* Bild 1 */}
+      {a.fehlanfahrt?.bild && (
+        <div style={{ flex: "0 0 48%" }}>
+          <small>1. Versuch:</small>
+          <img src={a.fehlanfahrt.bild} alt="Beweis 1" style={{ width: "100%", borderRadius: 5, border: "1px solid #ddd" }} />
+        </div>
+      )}
+      
+      {/* Bild 2 */}
+      {a.fehlanfahrt2?.bild && (
+        <div style={{ flex: "0 0 48%" }}>
+          <small>2. Versuch:</small>
+          <img src={a.fehlanfahrt2.bild} alt="Beweis 2" style={{ width: "100%", borderRadius: 5, border: "1px solid #ddd" }} />
+        </div>
+      )}
+    </div>
+
+    <button 
+      onClick={() => resetAuftrag(a._id)}
+      style={{ width: "100%", padding: "10px", marginTop: 10, background: "orange", color: "white", fontWeight: "bold", border: "none", borderRadius: 5, cursor: "pointer" }}
+    >
+      🔄 Erneut anfahren lassen
+    </button>
+  </div>
+)}
 
                   <div style={{ display: "flex", gap: 10, marginTop: 15 }}>
                     <button onClick={() => createPDF(a)} style={{ flex: 1, padding: 10, background: "#eee", border: "none", borderRadius: 5, cursor: "pointer" }}>📄 PDF Bericht</button>
