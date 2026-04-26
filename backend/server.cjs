@@ -80,19 +80,58 @@ app.post("/login", (req, res) => {
   res.status(401).json({ success: false });
 });
 
-// ================= DEMO DATEN =================
+// ================= DEMO DATEN FÜR PRÄSENTATION =================
 app.post("/demo-daten", async (req, res) => {
   try {
+    // 1. Board leeren
     await Auftrag.deleteMany({});
+
     const jetzt = new Date();
+    const vorEinerStunde = new Date(jetzt.getTime() - 60 * 60 * 1000);
+    const vorZweiStunden = new Date(jetzt.getTime() - 2 * 60 * 60 * 1000);
+
+    // 2. Die 5 Demo-Szenarien
     const demoAuftraege = [
-      { nummer: "R-8001", strasse: "Hauptstraße 45", plzOrt: "80331 München", material: "kom. Restmüll", fahrer: "Max", status: "offen", zeit: jetzt.toLocaleString("de-DE") },
-      { nummer: "R-8002", strasse: "Gewerbepark Nord 12", plzOrt: "85748 Garching", material: "Kartonage", fahrer: "", status: "offen", zeit: jetzt.toLocaleString("de-DE") }
+      {
+        nummer: "R-8001", strasse: "Hauptstraße 45", plzOrt: "97922 Lauda-Königshofen",
+        material: "kom. Restmüll", fahrer: "Max", status: "offen",
+        zeit: jetzt.toLocaleString("de-DE")
+      },
+      {
+        nummer: "R-8002", strasse: "Gewerbestraße 12", plzOrt: "97922 Lauda",
+        material: "Kartonage", fahrer: "", status: "offen", // Ohne Fahrer zum Vorführen!
+        zeit: jetzt.toLocaleString("de-DE")
+      },
+      {
+        nummer: "R-8003", strasse: "Schulweg 7", plzOrt: "97922 Königshofen",
+        material: "LVP", fahrer: "Tom", status: "erledigt",
+        zeit: vorZweiStunden.toLocaleString("de-DE"),
+        zeitErledigt: vorEinerStunde,
+        gps: { lat: 49.5704, lng: 9.7021 }
+      },
+      {
+        nummer: "R-8004", strasse: "Industriepark 99", plzOrt: "97922 Lauda",
+        material: "Abrufleerung", fahrer: "Ali", status: "fehlanfahrt",
+        zeit: vorZweiStunden.toLocaleString("de-DE"),
+        fehlanfahrt: {
+          zeit: vorEinerStunde,
+          gps: { lat: 49.5645, lng: 9.7055 },
+          bild: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=" 
+        }
+      },
+      {
+        nummer: "R-8005", strasse: "Am Sportplatz 1", plzOrt: "97922 Lauda",
+        material: "kom. Restmüll", fahrer: "Max", status: "offen",
+        zeit: jetzt.toLocaleString("de-DE")
+      }
     ];
+
     await Auftrag.insertMany(demoAuftraege);
     await updateClients();
+    
     res.json({ success: true });
   } catch (err) {
+    console.error("❌ Demo-Fehler:", err);
     res.status(500).json({ error: "Fehler beim Laden" });
   }
 });
