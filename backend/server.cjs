@@ -173,14 +173,19 @@ app.put("/auftraege/:id", async (req, res) => {
     // 3. Status-Update durch Fahrer
     if (statusUpdate === "fehlanfahrt") {
       emailSenden = true;
-      // Prüfen, ob es die erste oder zweite Fehlanfahrt ist
+      
+      // WICHTIG: In jedem Fall muss der Status auf "fehlanfahrt" gesetzt werden,
+      // damit der Auftrag beim Fahrer aus der Liste "Meine Aufträge" verschwindet!
+      auftrag.status = "fehlanfahrt"; 
+
       if (auftrag.fehlanfahrt && auftrag.fehlanfahrt.zeit) {
+        // Es ist der zweite Versuch
         auftrag.fehlanfahrt2 = { zeit: new Date(), gps: { lat, lng }, bild };
       } else {
+        // Es ist der erste Versuch
         auftrag.fehlanfahrt = { zeit: new Date(), gps: { lat, lng }, bild };
-        auftrag.status = "fehlanfahrt";
       }
-    } 
+    }
     else if (!statusUpdate && lat && lng) {
       // Normales "Erledigt"
       auftrag.status = "erledigt";
