@@ -302,7 +302,7 @@ function App() {
       if (gps && gps.lat) {
         pdf.text(`GPS-Standort: ${gps.lat}, ${gps.lng}`, 15, y); y += 5;
         pdf.setTextColor(0, 0, 255);
-        pdf.textWithLink("In Google Maps öffnen", 15, y, { url: `https://maps.google.com/?q=${gps.lat},${gps.lng}` });
+        pdf.textWithLink("In Google Maps öffnen", 15, y, { url: `https://www.google.com/maps?q=${gps.lat},${gps.lng}` });
         pdf.setTextColor(0, 0, 0);
         y += 7;
       }
