@@ -134,6 +134,7 @@ app.post("/demo-daten", async (req, res) => {
   }
 });
 
+
 // ================= ROUTEN =================
 app.get("/auftraege", async (req, res) => {
   res.json(await Auftrag.find());
