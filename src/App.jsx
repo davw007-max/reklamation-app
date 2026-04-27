@@ -142,11 +142,15 @@ function App() {
   };
 
   const archivieren = async (id) => {
+    // Kurze Rückmeldung für dich im Browser-Entwicklertool
+    console.log("Verschiebe ins Archiv:", id); 
+    
     try {
       await fetch(`${API}/auftraege/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ statusUpdate: "archiviert" }),
+        // HIER IST DIE LÖSUNG: Wir senden direkt "status" statt "statusUpdate"
+        body: JSON.stringify({ status: "archiviert" }), 
       });
       loadData();
     } catch (err) {
