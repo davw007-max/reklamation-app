@@ -282,7 +282,7 @@ function App() {
   const createPDF = (a) => {
     const pdf = new jsPDF();
 
-    const baseDate = a.zeitErledigt ? new Date(a.zeitErledigt) : (a.fehlanfahrt?.zeit ? new Date(a.fehlanfahrt.zeit) : new Date());
+    const baseDate = a.zeitErledigt ? new Date(a.zeitErledigt) : (a.fehlanfahrt2?.zeit ? new Date(a.fehlanfahrt2.zeit) : (a.fehlanfahrt?.zeit ? new Date(a.fehlanfahrt.zeit) : new Date()));
     const year = baseDate.getFullYear();
     const kw = getKW(baseDate);
     const tag = String(baseDate.getDate()).padStart(2, "0");
@@ -369,11 +369,14 @@ function App() {
       drawVisitBlock("1. ANFAHRT (Fehlanfahrt)", a.fehlanfahrt.zeit, a.fehlanfahrt.gps, a.fehlanfahrt.bild, true);
     }
 
+    // 2. Block: Zweite Fehlanfahrt (falls vorhanden)
     if (a.fehlanfahrt2 && a.fehlanfahrt2.zeit) {
       drawVisitBlock("2. ANFAHRT (Erneute Fehlanfahrt)", a.fehlanfahrt2.zeit, a.fehlanfahrt2.gps, a.fehlanfahrt2.bild, true);
     }
 
-    if (a.status === "erledigt") {
+    // 3. Block: Der erfolgreiche Abschluss
+    // WICHTIG: Wir prüfen hier auf zeitErledigt, damit es auch im Archiv klappt!
+    if (a.zeitErledigt) {
       const istZweiterVersuch = a.fehlanfahrt && a.fehlanfahrt.zeit;
       const titel = istZweiterVersuch ? "ERFOLGREICHE ANFAHRT (Nach Fehlanfahrt)" : "ANFAHRT (Erfolgreich erledigt)";
       drawVisitBlock(titel, a.zeitErledigt, a.gps, null, false);
