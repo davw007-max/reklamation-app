@@ -41,8 +41,10 @@ function App() {
   const [pendingSyncs, setPendingSyncs] = useState([]);
   const [activeView, setActiveView] = useState("live"); // "live" oder "archive"
   const [archiveSearch, setArchiveSearch] = useState("");
+  const [archiveMaterial, setArchiveMaterial] = useState("");
   const [archiveYear, setArchiveYear] = useState(new Date().getFullYear().toString());
   const [archiveMonth, setArchiveMonth] = useState("");
+  
 
   const isDispo = user === "Dispo";
   const isFahrer = user && user !== "Dispo";
@@ -651,6 +653,14 @@ function App() {
                 style={{ ...modernInput, width: "90%", marginBottom: "15px" }}
               />
 
+              <label style={{ fontSize: "12px", fontWeight: "bold", color: "#718096" }}>MATERIAL</label>
+              <select value={archiveMaterial} onChange={(e) => setArchiveMaterial(e.target.value)} style={{ ...modernInput, width: "100%", marginBottom: "15px" }}>
+                <option value="">Alle Materialien</option>
+                {materialListe.map((m, i) => (
+                  <option key={i} value={m}>{m}</option>
+                ))}
+              </select>
+
               <label style={{ fontSize: "12px", fontWeight: "bold", color: "#718096" }}>JAHR</label>
               <select value={archiveYear} onChange={(e) => setArchiveYear(e.target.value)} style={{ ...modernInput, width: "100%", marginBottom: "15px" }}>
                 <option value="">Alle Jahre</option>
@@ -666,49 +676,60 @@ function App() {
                   <option key={i} value={i}>{m}</option>
                 ))}
               </select>
-
-              <div style={{ marginTop: "20px", padding: "10px", background: "#f7fafc", borderRadius: "8px", fontSize: "12px", color: "#4a5568" }}>
-                Gefundene Einträge: <b>{auftraege.filter(a => a.status === "archiviert").length}</b>
-              </div>
             </div>
 
             {/* ARCHIV-RECHTS: AUFTRÄGE */}
-            <div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(350px, 1fr))", gap: "20px" }}>
-                {auftraege
-                  .filter(a => a.status === "archiviert")
-                  .filter(a => {
-                    const date = new Date(a.zeitErledigt || a.zeitErstellt || new Date());
-                    const matchYear = archiveYear ? date.getFullYear().toString() === archiveYear : true;
-                    const matchMonth = archiveMonth ? date.getMonth().toString() === archiveMonth : true;
-                    const matchSearch = (a.nummer + a.strasse + a.plzOrt).toLowerCase().includes(archiveSearch.toLowerCase());
-                    return matchYear && matchMonth && matchSearch;
-                  })
-                  .map(a => (
-                    <div key={a._id} style={{ background: "#fff", padding: "20px", borderRadius: "12px", boxShadow: "0 2px 8px rgba(0,0,0,0.05)", border: "1px solid #e2e8f0" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "10px" }}>
-                        <b style={{ fontSize: "16px" }}>#{a.nummer}</b>
-                        <span style={{ fontSize: "12px", color: "#718096" }}>{new Date(a.zeitErledigt || a.zeitErstellt).toLocaleDateString("de-DE")}</span>
-                      </div>
-                      <div style={{ fontSize: "14px", marginBottom: "15px" }}>
-                        📍 {a.strasse}, {a.plzOrt}<br/>
-                        📦 {a.material}
-                      </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(350px, 1fr))", gap: "20px" }}>
+              {auftraege
+                .filter(a => a.status === "archiviert")
+                .filter(a => {
+                  // Sicherer Datums-Check (verhindert "Invalid Date" Bugs)
+                  const date = a.zeitErledigt ? new Date(a.zeitErledigt) : new Date();
+                  const matchYear = archiveYear ? date.getFullYear().toString() === archiveYear : true;
+                  const matchMonth = archiveMonth ? date.getMonth().toString() === archiveMonth : true;
+                  const matchMaterial = archiveMaterial ? a.material === archiveMaterial : true;
+                  
+                  // Sicherstellen, dass leere Felder (z.B. keine Straße) die App nicht crashen
+                  const suchText = ((a.nummer || "") + (a.strasse || "") + (a.plzOrt || "")).toLowerCase();
+                  const matchSearch = suchText.includes(archiveSearch.toLowerCase());
+                  
+                  return matchYear && matchMonth && matchMaterial && matchSearch;
+                })
+                .map(a => (
+                  <div key={a._id} style={{ background: "#fff", padding: "20px", borderRadius: "12px", boxShadow: "0 2px 8px rgba(0,0,0,0.05)", border: "1px solid #e2e8f0" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "10px" }}>
+                      <b style={{ fontSize: "16px" }}>#{a.nummer}</b>
+                      <span style={{ fontSize: "12px", color: "#718096" }}>
+                        {a.zeitErledigt ? new Date(a.zeitErledigt).toLocaleDateString("de-DE") : "Kein Datum"}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: "14px", marginBottom: "15px" }}>
+                      📍 {a.strasse}, {a.plzOrt}<br/>
+                      📦 <strong>{a.material}</strong>
+                    </div>
+                    
+                    <div style={{ display: "flex", gap: "10px" }}>
                       <button 
                         onClick={() => createPDF(a)} 
-                        style={{ width: "100%", padding: "10px", background: "#edf2f7", border: "1px solid #cbd5e1", borderRadius: "6px", fontWeight: "bold", cursor: "pointer" }}
+                        style={{ flex: 2, padding: "10px", background: "#edf2f7", border: "1px solid #cbd5e1", borderRadius: "6px", fontWeight: "bold", cursor: "pointer" }}
                       >
-                        📄 PDF-Bericht öffnen
+                        📄 PDF-Bericht
+                      </button>
+                      
+                      <button 
+                        onClick={() => deleteAuftrag(a._id)} 
+                        style={{ flex: 1, padding: "10px", background: "#fff5f5", color: "#c53030", border: "1px solid #feb2b2", borderRadius: "6px", fontWeight: "bold", cursor: "pointer" }}
+                      >
+                        🗑️
                       </button>
                     </div>
-                  ))
-                }
-              </div>
-            </div>
-          </div>
+                  </div>
+                ))}
+            </div> {/* ENDE ARCHIV-RECHTS */}
+          </div> /* ENDE 1400px Container */
         )}
-      </div>
-    </div>
+      </div> {/* ENDE padding 20px Container */}
+    </div> /* ENDE Haupt-Hintergrund Container */
   );
 }
 
