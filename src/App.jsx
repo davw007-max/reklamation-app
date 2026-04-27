@@ -536,21 +536,27 @@ if (a.status === "erledigt") {
                   ))}
                 </div>
 
-                {/* HIER SIND DIE AUFTRAGSKARTEN */}
+                {/* RECHTS LISTE STICKY FILTER */}
+              <div>
+                <div style={{ position: "sticky", top: "70px", zIndex: 900, background: "#f4f7f9", padding: "10px 0 20px 0", display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                  {[{ id: "offen", label: "🔴 Offen", color: "#d9534f" }, { id: "erledigt", label: "🟢 Erledigt", color: "#28a745" }, { id: "fehlanfahrt", label: "⚠️ Fehlanfahrt", color: "#f0ad4e" }, { id: "alle", label: "📋 Alle", color: "#333" }].map((btn) => (
+                    <button key={btn.id} onClick={() => setFilter(btn.id)} style={{ flex: 1, padding: "12px", borderRadius: "8px", border: "none", cursor: "pointer", background: filter === btn.id ? btn.color : "white", color: filter === btn.id ? "white" : "#333", fontWeight: "bold", boxShadow: "0 2px 5px rgba(0,0,0,0.1)" }}>{btn.label}</button>
+                  ))}
+                </div>
+
                 <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
                   {gefilterteAuftraege.map((a) => (
-                    <div key={a._id} style={{ background: "white", borderLeft: `8px solid ${a.status === "erledigt" ? "#28a745" : (a.status === "fehlanfahrt" ? "#f0ad4e" : "#d9534f")}`, padding: "20px", borderRadius: "12px", boxShadow: "0 4px 12px rgba(0,0,0,0.05)", border: "1px solid #eee" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <b style={{ fontSize: "18px" }}>#{a.nummer}</b>
-                        <span style={{ fontWeight: "bold", color: "#666", background: "#f0f0f0", padding: "4px 10px", borderRadius: "5px" }}>{a.material}</span>
-                      </div>
-                      <div style={{ margin: "15px 0" }}>
-                        📍 <strong>{a.strasse}, {a.plzOrt}</strong><br />
-                        👤 Fahrer: 
-                        <select value={a.fahrer || ""} onChange={(e) => updateFahrer(a._id, e.target.value)} style={{ marginLeft: "10px", padding: "5px", borderRadius: "5px", border: "1px solid #ccc" }}>
-                          <option value="">-- Nicht zugewiesen --</option>
-                          <option>Max</option><option>Tom</option><option>Ali</option>
-                        </select>
+                    <div key={a._id} style={{ background: "white", borderLeft: `8px solid ${a.status === "erledigt" ? "#28a745" : (a.status === "fehlanfahrt" ? "#f0ad4e" : "#d9534f")}`, padding: "20px", borderRadius: "12px", boxShadow: "0 4px 12px rgba(0,0,0,0.05)" }}>
+                      
+                      {/* NEU: HEADER MIT STATUS-BADGE */}
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "15px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                          <b style={{ fontSize: "18px" }}>#{a.nummer}</b>
+                          <span style={{ fontSize: "11px", padding: "3px 10px", borderRadius: "20px", color: "white", fontWeight: "bold", background: a.status === "erledigt" ? "#28a745" : (a.status === "fehlanfahrt" ? "#f0ad4e" : "#d9534f") }}>
+                            {a.status === "fehlanfahrt" ? "⚠️ Fehlanfahrt" : a.status === "erledigt" ? "✅ Erledigt" : "🔴 Offen"}
+                          </span>
+                        </div>
+                        <span style={{ fontWeight: "bold", color: "#666", background: "#f0f0f0", padding: "4px 10px", borderRadius: "5px", fontSize: "14px" }}>{a.material}</span>
                       </div>
 
                       {/* FEHLANFAHRT BILDER */}
