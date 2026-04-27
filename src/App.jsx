@@ -536,14 +536,6 @@ if (a.status === "erledigt") {
                   ))}
                 </div>
 
-                {/* RECHTS LISTE STICKY FILTER */}
-              <div>
-                <div style={{ position: "sticky", top: "70px", zIndex: 900, background: "#f4f7f9", padding: "10px 0 20px 0", display: "flex", gap: "10px", flexWrap: "wrap" }}>
-                  {[{ id: "offen", label: "🔴 Offen", color: "#d9534f" }, { id: "erledigt", label: "🟢 Erledigt", color: "#28a745" }, { id: "fehlanfahrt", label: "⚠️ Fehlanfahrt", color: "#f0ad4e" }, { id: "alle", label: "📋 Alle", color: "#333" }].map((btn) => (
-                    <button key={btn.id} onClick={() => setFilter(btn.id)} style={{ flex: 1, padding: "12px", borderRadius: "8px", border: "none", cursor: "pointer", background: filter === btn.id ? btn.color : "white", color: filter === btn.id ? "white" : "#333", fontWeight: "bold", boxShadow: "0 2px 5px rgba(0,0,0,0.1)" }}>{btn.label}</button>
-                  ))}
-                </div>
-
                 <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
                   {gefilterteAuftraege.map((a) => (
                     <div key={a._id} style={{ background: "white", borderLeft: `8px solid ${a.status === "erledigt" ? "#28a745" : (a.status === "fehlanfahrt" ? "#f0ad4e" : "#d9534f")}`, padding: "20px", borderRadius: "12px", boxShadow: "0 4px 12px rgba(0,0,0,0.05)" }}>
