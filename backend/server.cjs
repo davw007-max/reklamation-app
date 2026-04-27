@@ -168,6 +168,7 @@ app.put("/auftraege/:id", async (req, res) => {
     // 2. NEU: Archiv-Logik
     if (statusUpdate === "archiviert") {
       auftrag.status = "archiviert";
+      console.log(`Auftrag ${auftrag.nummer} wurde archiviert`);
     }
 
     // 3. Reset-Logik (Status auf Offen setzen für 2. Versuch)

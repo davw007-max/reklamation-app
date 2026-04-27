@@ -142,19 +142,21 @@ function App() {
   };
 
   const archivieren = async (id) => {
-    // Kurze Rückmeldung für dich im Browser-Entwicklertool
-    console.log("Verschiebe ins Archiv:", id); 
-    
-    try {
-      await fetch(`${API}/auftraege/${id}`, {
+      console.log("Verschiebe ins Archiv:", id); 
+     try {
+       const response = await fetch(`${API}/auftraege/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        // HIER IST DIE LÖSUNG: Wir senden direkt "status" statt "statusUpdate"
-        body: JSON.stringify({ status: "archiviert" }), 
+        body: JSON.stringify({ statusUpdate: "archiviert" }), 
       });
-      loadData();
+
+      if (response.ok) {
+        loadData(); // Liste erst neu laden, wenn der Server "OK" sagt
+      } else {
+        console.error("Server antwortete mit Fehler beim Archivieren");
+      }
     } catch (err) {
-      console.error("Archivieren fehlgeschlagen:", err);
+      console.error("Netzwerkfehler beim Archivieren:", err);
     }
   };
 
