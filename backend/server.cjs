@@ -25,19 +25,20 @@ mongoose
 
 // ================= MAIL =================
 const transporter = nodemailer.createTransport({
-  service: "gmail",
   host: "smtp.gmail.com",
-  port: 465,
-  secure: true,
-  // ZWINGT den Server, IPv4 zu nutzen (löst ENETUNREACH)
-  family: 4, 
+  port: 587,
+  secure: false, // WICHTIG: Muss für Port 587 auf false stehen
   auth: {
     user: process.env.MAIL_USER,
-    pass: process.env.MAIL_PASS,
+    pass: process.env.MAIL_PASS, // Dein 16-stelliges App-Passwort
   },
-  // Erhöht das Zeitlimit, falls Render mal wieder langsam ist
-  connectionTimeout: 10000, 
-  greetingTimeout: 10000,
+  // Das hier ist der "Holzhammer" gegen IPv6:
+  connectionTimeout: 20000, // Mehr Zeit für den Handshake
+  greetingTimeout: 20000,
+  socketTimeout: 20000,
+  dnsTimeout: 10000,
+  // Zwingt Node.js, smtp.gmail.com nur über IPv4 zu suchen
+  family: 4 
 });
 
 // ================= SCHEMA =================
