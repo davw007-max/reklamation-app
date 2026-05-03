@@ -27,26 +27,29 @@ mongoose
 const transporter = nodemailer.createTransport({
   host: "smtp.ionos.de",
   port: 587,
-  secure: false, // Für Port 587 MUSS das auf false stehen
+  secure: false, // Wichtig für Port 587
   auth: {
     user: process.env.MAIL_USER,
     pass: process.env.MAIL_PASS,
   },
-  family: 4, // Bleibt drin, um IPv6-Probleme zu vermeiden
-  connectionTimeout: 10000, // Wir warten max. 10 Sek.
-  greetingTimeout: 10000,
+  // Erzwingt IPv4, da IPv6 bei Render/IONOS oft zu ENETUNREACH führt
+  family: 4, 
+  // IONOS braucht manchmal eine explizite Nennung der Auth-Methode
+  authMethod: 'PLAIN', 
   tls: {
-    // Erzwingt eine sichere Verbindung, auch wenn secure:false ist
+    // STARTTLS ist bei Port 587 Pflicht
+    ciphers: 'SSLv3',
     rejectUnauthorized: false
-  }
+  },
+  connectionTimeout: 10000,
 });
 
-// NEU: Verbindungstest direkt beim Start
+// Der "Frühwarnsystem"-Check beim Start
 transporter.verify((error, success) => {
   if (error) {
-    console.log("🛑 SMTP-Check fehlgeschlagen:", error.message);
+    console.log("🛑 IONOS Auth-Check fehlgeschlagen:", error.message);
   } else {
-    console.log("🚀 SMTP-Server ist bereit!");
+    console.log("🚀 IONOS SMTP (Auth) ist bereit!");
   }
 });
 
