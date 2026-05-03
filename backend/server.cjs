@@ -25,33 +25,24 @@ mongoose
 
 // ================= MAIL =================
 const transporter = nodemailer.createTransport({
-  host: "smtp.ionos.de",
-  port: 587,
-  secure: false, 
-  requireTLS: true, // Erzwingt TLS
+  host: "smtp.resend.com",
+  port: 465,
+  secure: true, // SSL für Port 465
   auth: {
-    user: process.env.MAIL_USER,
-    pass: process.env.MAIL_PASS,
-  },
-  family: 4,
-  connectionTimeout: 30000, // Wir geben ihm satte 30 Sekunden
-  greetingTimeout: 30000,
-  socketTimeout: 30000,
-  tls: {
-    // Manche Cloud-Instanzen brauchen das, um den Hostnamen korrekt zu validieren
-    servername: "smtp.ionos.de",
-    rejectUnauthorized: false
+    user: "resend", // Muss exakt so heißen
+    pass: process.env.MAIL_PASS, // Hier zieht er den re_xxx Key von Render
   }
 });
 
-// Der "Frühwarnsystem"-Check beim Start
+// Der Check beim Start (wichtig!)
 transporter.verify((error, success) => {
   if (error) {
-    console.log("🛑 IONOS Auth-Check fehlgeschlagen:", error.message);
+    console.log("🛑 Resend Check fehlgeschlagen:", error.message);
   } else {
-    console.log("🚀 IONOS SMTP (Auth) ist bereit!");
+    console.log("🚀 Resend ist bereit! Die Leitung steht.");
   }
 });
+
 
 // ================= SCHEMA =================
 const AuftragSchema = new mongoose.Schema({
@@ -255,7 +246,8 @@ if (emailSenden) {
       try {
         console.log(`✉️ Sende Mail für Auftrag ${auftrag.nummer}...`);
         await transporter.sendMail({
-          from: process.env.MAIL_USER,
+          // WICHTIG: Hier muss für Resend zwingend "onboarding@resend.dev" stehen
+          from: "onboarding@resend.dev", 
           to: process.env.MAIL_TO,
           subject: `${auftrag.status.toUpperCase()}: Auftrag ${auftrag.nummer}`,
           text: `Bericht für Nr. ${auftrag.nummer}.`,
@@ -264,7 +256,7 @@ if (emailSenden) {
         console.log("✅ Mail erfolgreich raus.");
       } catch (mailErr) {
         // Wenn die Mail scheitert, bleibt der Server trotzdem am Leben!
-        console.error("❌ Mail-Versand fehlgeschlagen (Netzwerk/SMTP):", mailErr.message);
+        console.error("❌ Mail-Versand fehlgeschlagen (Resend/SMTP):", mailErr.message);
       }
 
     } catch (generalErr) {
