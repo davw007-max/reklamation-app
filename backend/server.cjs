@@ -26,10 +26,18 @@ mongoose
 // ================= MAIL =================
 const transporter = nodemailer.createTransport({
   service: "gmail",
+  host: "smtp.gmail.com",
+  port: 465,
+  secure: true,
+  // ZWINGT den Server, IPv4 zu nutzen (löst ENETUNREACH)
+  family: 4, 
   auth: {
     user: process.env.MAIL_USER,
     pass: process.env.MAIL_PASS,
   },
+  // Erhöht das Zeitlimit, falls Render mal wieder langsam ist
+  connectionTimeout: 10000, 
+  greetingTimeout: 10000,
 });
 
 // ================= SCHEMA =================
@@ -205,52 +213,51 @@ app.put("/auftraege/:id", async (req, res) => {
     await updateClients();
 
     // ==========================================
-    // 5. PDF GENERIERUNG & MAIL
-    // ==========================================
-    if (emailSenden) {
-      const doc = new PDFDocument({ margin: 40 });
-      const chunks = [];
+// 5. PDF GENERIERUNG & MAIL (STURMFEST)
+// ==========================================
+if (emailSenden) {
+  const doc = new PDFDocument({ margin: 40 });
+  const chunks = [];
+  
+  doc.on("data", (chunk) => chunks.push(chunk));
+
+  doc.on("end", async () => {
+    // Alles in ein try-catch, damit UNCAUGHT EXCEPTIONS verhindert werden
+    try {
+      const pdfBuffer = Buffer.concat(chunks);
       
-      doc.on("data", (chunk) => chunks.push(chunk));
+      const baseDate = auftrag.zeitErledigt || 
+                       (auftrag.fehlanfahrt2 ? auftrag.fehlanfahrt2.zeit : 
+                       (auftrag.fehlanfahrt ? auftrag.fehlanfahrt.zeit : new Date()));
+      
+      const getKW = (date) => {
+        const d = new Date(date);
+        d.setDate(d.getDate() + 4 - (d.getDay() || 7));
+        return Math.ceil(((d - new Date(d.getFullYear(), 0, 1)) / 86400000 + 1) / 7);
+      };
 
-      doc.on("end", async () => {
-        try {
-          const pdfBuffer = Buffer.concat(chunks);
-          
-          // Datum für Dateiname ermitteln
-          const baseDate = auftrag.zeitErledigt || 
-                           (auftrag.fehlanfahrt2 ? auftrag.fehlanfahrt2.zeit : 
-                           (auftrag.fehlanfahrt ? auftrag.fehlanfahrt.zeit : new Date()));
-          
-          const getKW = (date) => {
-            const d = new Date(date);
-            d.setDate(d.getDate() + 4 - (d.getDay() || 7));
-            return Math.ceil(((d - new Date(d.getFullYear(), 0, 1)) / 86400000 + 1) / 7);
-          };
+      const fileName = `${baseDate.getFullYear()}_KW${getKW(baseDate)}_${auftrag.nummer}_${auftrag.status.toUpperCase()}.pdf`;
 
-          const fileName = `${baseDate.getFullYear()}_KW${getKW(baseDate)}_${auftrag.nummer}_${auftrag.status.toUpperCase()}.pdf`;
+      // MAIL-VERSAND (Extra gesichert)
+      try {
+        console.log(`✉️ Sende Mail für Auftrag ${auftrag.nummer}...`);
+        await transporter.sendMail({
+          from: process.env.MAIL_USER,
+          to: process.env.MAIL_TO,
+          subject: `${auftrag.status.toUpperCase()}: Auftrag ${auftrag.nummer}`,
+          text: `Bericht für Nr. ${auftrag.nummer}.`,
+          attachments: [{ filename: fileName, content: pdfBuffer }],
+        });
+        console.log("✅ Mail erfolgreich raus.");
+      } catch (mailErr) {
+        // Wenn die Mail scheitert, bleibt der Server trotzdem am Leben!
+        console.error("❌ Mail-Versand fehlgeschlagen (Netzwerk/SMTP):", mailErr.message);
+      }
 
-          console.log(`Versuche E-Mail zu senden für Auftrag ${auftrag.nummer}...`);
-
-          // Separater Try-Catch für den Mail-Versand (verhindert Server-Absturz bei Timeout)
-          try {
-            await transporter.sendMail({
-              from: process.env.MAIL_USER,
-              to: process.env.MAIL_TO,
-              subject: `${auftrag.status.toUpperCase()}: Auftrag ${auftrag.nummer}`,
-              text: `Bericht für Nr. ${auftrag.nummer}.`,
-              attachments: [{ filename: fileName, content: pdfBuffer }],
-            });
-            console.log("✅ E-Mail erfolgreich gesendet.");
-          } catch (mailError) {
-            console.error("❌ Mail-Fehler (SMTP/Timeout):", mailError.message);
-            // Der Server läuft hier einfach weiter, nur die Mail ging nicht raus.
-          }
-
-        } catch (generalError) {
-          console.error("❌ Schwerer Fehler in der PDF-Nachbearbeitung:", generalError);
-        }
-      });
+    } catch (generalErr) {
+      console.error("❌ Fehler in der PDF-Verarbeitung:", generalErr.message);
+    }
+  });
 
       
       // PDF LAYOUT
@@ -298,6 +305,14 @@ app.delete("/auftraege/:id", async (req, res) => {
   await Auftrag.findByIdAndDelete(req.params.id);
   await updateClients();
   res.json({ success: true });
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err);
 });
 
 server.listen(PORT, "0.0.0.0", () => console.log(`🚀 Server läuft auf Port ${PORT}`));
