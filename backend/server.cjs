@@ -5,6 +5,8 @@ const { Server } = require("socket.io");
 const mongoose = require("mongoose");
 const nodemailer = require("nodemailer");
 const PDFDocument = require("pdfkit");
+const { Resend } = require('resend');
+const resend = new Resend(process.env.MAIL_PASS); // Dein re_xxx Key
 
 const PORT = process.env.PORT || 3001;
 const app = express();
@@ -219,50 +221,46 @@ app.put("/auftraege/:id", async (req, res) => {
     // ==========================================
 // 5. PDF GENERIERUNG & MAIL (STURMFEST)
 // ==========================================
-if (emailSenden) {
-  const doc = new PDFDocument({ margin: 40 });
-  const chunks = [];
-  
-  doc.on("data", (chunk) => chunks.push(chunk));
+// ==========================================
+    // 5. PDF GENERIERUNG & MAIL PER API (STURMFEST)
+    // ==========================================
+    if (emailSenden) {
+      const doc = new PDFDocument({ margin: 40 });
+      const chunks = [];
+      doc.on("data", (chunk) => chunks.push(chunk));
 
-  doc.on("end", async () => {
-    // Alles in ein try-catch, damit UNCAUGHT EXCEPTIONS verhindert werden
-    try {
-      const pdfBuffer = Buffer.concat(chunks);
-      
-      const baseDate = auftrag.zeitErledigt || 
-                       (auftrag.fehlanfahrt2 ? auftrag.fehlanfahrt2.zeit : 
-                       (auftrag.fehlanfahrt ? auftrag.fehlanfahrt.zeit : new Date()));
-      
-      const getKW = (date) => {
-        const d = new Date(date);
-        d.setDate(d.getDate() + 4 - (d.getDay() || 7));
-        return Math.ceil(((d - new Date(d.getFullYear(), 0, 1)) / 86400000 + 1) / 7);
-      };
+      doc.on("end", async () => {
+        try {
+          const pdfBuffer = Buffer.concat(chunks);
+          const baseDate = auftrag.zeitErledigt || new Date();
+          const fileName = `Bericht_${auftrag.nummer}.pdf`;
 
-      const fileName = `${baseDate.getFullYear()}_KW${getKW(baseDate)}_${auftrag.nummer}_${auftrag.status.toUpperCase()}.pdf`;
+          console.log(`🚀 Sende Mail via API für Auftrag ${auftrag.nummer}...`);
 
-      // MAIL-VERSAND (Extra gesichert)
-      try {
-        console.log(`✉️ Sende Mail für Auftrag ${auftrag.nummer}...`);
-        await transporter.sendMail({
-          // WICHTIG: Hier muss für Resend zwingend "onboarding@resend.dev" stehen
-          from: "onboarding@resend.dev", 
-          to: process.env.MAIL_TO,
-          subject: `${auftrag.status.toUpperCase()}: Auftrag ${auftrag.nummer}`,
-          text: `Bericht für Nr. ${auftrag.nummer}.`,
-          attachments: [{ filename: fileName, content: pdfBuffer }],
-        });
-        console.log("✅ Mail erfolgreich raus.");
-      } catch (mailErr) {
-        // Wenn die Mail scheitert, bleibt der Server trotzdem am Leben!
-        console.error("❌ Mail-Versand fehlgeschlagen (Resend/SMTP):", mailErr.message);
-      }
+          // Hier nutzen wir jetzt die API statt SMTP
+          const { data, error } = await resend.emails.send({
+            from: 'onboarding@resend.dev',
+            to: process.env.MAIL_TO,
+            subject: `${auftrag.status.toUpperCase()}: Auftrag ${auftrag.nummer}`,
+            text: `Anbei der Bericht für Auftrag Nr. ${auftrag.nummer}.`,
+            attachments: [
+              {
+                filename: fileName,
+                content: pdfBuffer,
+              },
+            ],
+          });
 
-    } catch (generalErr) {
-      console.error("❌ Fehler in der PDF-Verarbeitung:", generalErr.message);
-    }
-  });
+          if (error) {
+            console.error("❌ Resend API Fehler:", error.message);
+          } else {
+            console.log("✅ Mail erfolgreich via API gesendet!", data.id);
+          }
+
+        } catch (generalErr) {
+          console.error("❌ Fehler in der PDF/Mail-Verarbeitung:", generalErr.message);
+        }
+      });
 
       
       // PDF LAYOUT
