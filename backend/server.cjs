@@ -25,17 +25,21 @@ mongoose
 
 // ================= MAIL =================
 const transporter = nodemailer.createTransport({
-  host: "smtp.ionos.de", // IONOS SMTP Server
-  port: 465,             // Sicherer Port
-  secure: true,          // true für Port 465
+  host: "smtp.ionos.de",
+  port: 465,
+  secure: true, // Port 465 nutzt SSL
   auth: {
-    user: process.env.MAIL_USER,
-    pass: process.env.MAIL_PASS,
+    user: process.env.MAIL_USER, // Deine IONOS E-Mail
+    pass: process.env.MAIL_PASS, // Dein IONOS Passwort
   },
-  // Auch hier zur Sicherheit IPv4 erzwingen
-  family: 4,
-  connectionTimeout: 10000,
-  greetingTimeout: 10000
+  // Das ist wichtig, um Netzwerk-Hürden bei Render zu umgehen
+  family: 4, 
+  connectionTimeout: 15000, // Wir geben IONOS 15 Sekunden Zeit
+  greetingTimeout: 15000,
+  tls: {
+    // Falls IONOS und Render sich beim Zertifikat uneinig sind
+    rejectUnauthorized: false 
+  }
 });
 
 // ================= SCHEMA =================
