@@ -13,6 +13,7 @@
     "nodemailer": "^8.0.5",
     "pdfkit": "^0.18.0",
     "react-signature-canvas": "^1.1.0-alpha.2",
+    "resend": "^6.12.2",
     "socket.io": "^4.7.5"
   }
 }
