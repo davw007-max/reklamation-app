@@ -27,21 +27,21 @@ mongoose
 const transporter = nodemailer.createTransport({
   host: "smtp.ionos.de",
   port: 587,
-  secure: false, // Wichtig für Port 587
+  secure: false, 
+  requireTLS: true, // Erzwingt TLS
   auth: {
     user: process.env.MAIL_USER,
     pass: process.env.MAIL_PASS,
   },
-  // Erzwingt IPv4, da IPv6 bei Render/IONOS oft zu ENETUNREACH führt
-  family: 4, 
-  // IONOS braucht manchmal eine explizite Nennung der Auth-Methode
-  authMethod: 'PLAIN', 
+  family: 4,
+  connectionTimeout: 30000, // Wir geben ihm satte 30 Sekunden
+  greetingTimeout: 30000,
+  socketTimeout: 30000,
   tls: {
-    // STARTTLS ist bei Port 587 Pflicht
-    ciphers: 'SSLv3',
+    // Manche Cloud-Instanzen brauchen das, um den Hostnamen korrekt zu validieren
+    servername: "smtp.ionos.de",
     rejectUnauthorized: false
-  },
-  connectionTimeout: 10000,
+  }
 });
 
 // Der "Frühwarnsystem"-Check beim Start
