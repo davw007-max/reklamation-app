@@ -25,20 +25,17 @@ mongoose
 
 // ================= MAIL =================
 const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 587,
-  secure: false, // WICHTIG: Muss für Port 587 auf false stehen
+  host: "smtp.ionos.de", // IONOS SMTP Server
+  port: 465,             // Sicherer Port
+  secure: true,          // true für Port 465
   auth: {
     user: process.env.MAIL_USER,
-    pass: process.env.MAIL_PASS, // Dein 16-stelliges App-Passwort
+    pass: process.env.MAIL_PASS,
   },
-  // Das hier ist der "Holzhammer" gegen IPv6:
-  connectionTimeout: 20000, // Mehr Zeit für den Handshake
-  greetingTimeout: 20000,
-  socketTimeout: 20000,
-  dnsTimeout: 10000,
-  // Zwingt Node.js, smtp.gmail.com nur über IPv4 zu suchen
-  family: 4 
+  // Auch hier zur Sicherheit IPv4 erzwingen
+  family: 4,
+  connectionTimeout: 10000,
+  greetingTimeout: 10000
 });
 
 // ================= SCHEMA =================
